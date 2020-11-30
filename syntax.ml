@@ -91,7 +91,7 @@ let termSubstTop s t =
 (* ---------------------------------------------------------------------- *)
 (* Context management (continued) *)
 
-let rec getbinding fi ctx i =
+let getbinding fi ctx i =
   try
     let (_,bind) = List.nth ctx i in
     bind 
@@ -135,7 +135,7 @@ let small t =
   | _ -> false
 
 let rec printtm_Term outer ctx t = match t with
-    TmAbs(fi,x,t2) ->
+    TmAbs(_,x,t2) ->
       (let (ctx',x') = (pickfreshname ctx x) in
             obox(); pr "lambda "; pr x'; pr ".";
             if (small t2) && not outer then break() else print_space();
@@ -144,7 +144,7 @@ let rec printtm_Term outer ctx t = match t with
   | t -> printtm_AppTerm outer ctx t
 
 and printtm_AppTerm outer ctx t = match t with
-    TmApp(fi, t1, t2) ->
+    TmApp(_, t1, t2) ->
       obox0();
       printtm_AppTerm false ctx t1;
       print_space();
@@ -165,7 +165,7 @@ and printtm_ATerm outer ctx t = match t with
 
 let printtm ctx t = printtm_Term true ctx t 
 
-let prbinding ctx b = match b with
+let prbinding _ctx b = match b with
     NameBind -> () 
 
 

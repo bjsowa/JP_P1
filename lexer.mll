@@ -18,6 +18,9 @@ let reservedWords = [
   ("add", fun i -> Parser.ADD i);
   ("mult", fun i -> Parser.MULT i);
   ("fix", fun i -> Parser.FIX i);
+  ("pair", fun i -> Parser.PAIR i);
+  ("fst", fun i -> Parser.FST i);
+  ("snd", fun i -> Parser.SND i);
 
   (* Symbols *)
   ("_", fun i -> Parser.USCORE i);
@@ -92,7 +95,7 @@ let info lexbuf =
 
 let text = Lexing.lexeme
 
-let stringBuffer = ref (String.create 2048)
+let stringBuffer = ref (Bytes.create 2048)
 let stringEnd = ref 0
 
 let resetStr () = stringEnd := 0
@@ -103,15 +106,15 @@ let addStr ch =
 in
   if x = String.length buffer then
     begin
-      let newBuffer = String.create (x*2) in
+      let newBuffer = Bytes.create (x*2) in
       String.blit buffer 0 newBuffer 0 x;
-      String.set newBuffer x ch;
+      Bytes.set newBuffer x ch;
       stringBuffer := newBuffer;
       stringEnd := x+1
     end
   else
     begin
-      String.set buffer x ch;
+      Bytes.set buffer x ch;
       stringEnd := x+1
     end
 

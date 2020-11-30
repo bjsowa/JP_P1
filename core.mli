@@ -4,7 +4,6 @@
 *)
 
 open Syntax
-open Support.Error
 
 val eval_cbn : context -> term -> term 
 val normalize : context -> term -> term

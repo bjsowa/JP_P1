@@ -47,7 +47,7 @@ let rec check_equal ctx t1 t2 =
     (TmAbs(_, _, t1), TmAbs(_, _, t2)) -> 
       check_equal ctx t1 t2
   | (TmApp(_, t11, t12), TmApp(_, t21, t22)) ->
-      check_equal ctx t11 t21 && check_equal ctx t21 t22
+      check_equal ctx t11 t21 && check_equal ctx t12 t22
   | (TmVar(_, x1, _), TmVar(_, x2, _)) ->
       x1 == x2
   | _ -> false

@@ -5,7 +5,6 @@
 
 %{
 open Support.Error
-open Support.Pervasive
 open Syntax
 %}
 
@@ -29,6 +28,9 @@ open Syntax
 %token <Support.Error.info> ADD
 %token <Support.Error.info> MULT
 %token <Support.Error.info> FIX
+%token <Support.Error.info> PAIR
+%token <Support.Error.info> FST
+%token <Support.Error.info> SND
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -125,7 +127,7 @@ Command :
 /* Right-hand sides of top-level bindings */
 Binder :
     SLASH
-      { fun ctx -> NameBind }
+      { fun _ctx -> NameBind }
 
 Term :
     AppTerm
@@ -223,6 +225,44 @@ Term :
                       TmVar($1, 0, ctxlength ctx + 2),
                       TmVar($1, 0, ctxlength ctx + 2)
             ) ) ) ) ),
+            $2 ctx
+          ) }
+  | PAIR Term Term
+      { fun ctx -> 
+          TmApp($1,
+            TmApp($1,
+              TmAbs($1, "f",
+                TmAbs($1, "s",
+                  TmAbs($1, "b", 
+                    TmApp($1,
+                      TmApp($1,
+                        TmVar($1, 0, ctxlength ctx + 3),
+                        TmVar($1, 2, ctxlength ctx + 3)
+                      ),
+                      TmVar($1, 1, ctxlength ctx + 3)
+              ) ) ) ),
+              $2 ctx
+            ),
+            $3 ctx
+          ) }
+  | FST Term
+      { fun ctx -> 
+          TmApp($1,
+            TmAbs($1, "p",
+              TmApp($1,
+                TmVar($1, 0, ctxlength ctx + 1),
+                TmAbs($1, "t", TmAbs($1, "f", TmVar($1, 1, 2 + ctxlength ctx)))
+            ) ),
+            $2 ctx
+          ) }
+  | SND Term
+      { fun ctx -> 
+          TmApp($1,
+            TmAbs($1, "p",
+              TmApp($1,
+                TmVar($1, 0, ctxlength ctx + 1),
+                TmAbs($1, "t", TmAbs($1, "f", TmVar($1, 0, 2 + ctxlength ctx)))
+            ) ),
             $2 ctx
           ) }
 

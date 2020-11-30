@@ -36,7 +36,7 @@ let openfile infile =
       | (d::rest) -> 
           let name = if d = "" then infile else (d ^ "/" ^ infile) in
           try open_in name
-            with Sys_error m -> trynext rest
+            with Sys_error _ -> trynext rest
   in trynext !searchpath
 
 let parseFile inFile =
@@ -50,16 +50,16 @@ in
 
 let alreadyImported = ref ([] : string list)
 
-let rec process_command ctx cmd = match cmd with
-  | Eval(fi,t) -> 
+let process_command ctx cmd = match cmd with
+  | Eval(_,t) -> 
       pr "Evaluating: "; printtm_ATerm false ctx t; force_newline();
       let t' = normalize ctx t in
       printtm_ATerm true ctx t'; force_newline();
       ctx
-  | Bind(fi,x,bind) -> 
+  | Bind(_,x,bind) -> 
       pr "Binding: "; pr x; pr " "; prbinding ctx bind; force_newline();
       addbinding ctx x bind
-  | Equal(fi, t1, t2) ->
+  | Equal(_, t1, t2) ->
       pr "Checking for equality:"; force_newline();
       pr "T1: "; printtm_ATerm false ctx t1; force_newline();
       pr "T2: "; printtm_ATerm false ctx t2; force_newline();
