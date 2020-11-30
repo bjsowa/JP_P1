@@ -73,6 +73,17 @@ let tmsInfo t = match t with
     TmsVar(fi,_) -> fi
   | TmsAbs(fi,_,_) -> fi
   | TmsApp(fi, _, _) -> fi 
+  | TmsNum(fi,_) -> fi
+  | TmsTrue(fi) -> fi
+  | TmsFalse(fi) -> fi
+  | TmsIf(fi,_,_,_) -> fi
+  | TmsAdd(fi,_,_) -> fi
+  | TmsMult(fi,_,_) -> fi
+  | TmsFix(fi,_) -> fi
+  | TmsPair(fi,_,_) -> fi
+  | TmsFst(fi,_) -> fi
+  | TmsSnd(fi,_) -> fi
+
 
 (* --------------------------  PRINTING  ------------------------- *)
 
@@ -149,6 +160,14 @@ and printtms_AppTerm outer t = match t with
 
 and printtms_ATerm outer t = match t with
     TmsVar(_,x) -> pr x
+  | TmsTrue(_) -> pr "true"
+  | TmsFalse(_) -> pr "false"
+  | TmsAdd(_, t1, t2) ->
+      obox(); pr "add ";
+      printtms_ATerm false t1;
+      print_space();
+      printtms_ATerm false t2;
+      cbox()
   | t -> pr "("; printtms_Term outer t; pr ")"
 
 let printtms t = printtms_Term true t 
