@@ -9,25 +9,11 @@ let emptycontext = []
 
 let ctxlength ctx = List.length ctx
 
-let addbinding ctx x bind = (x,bind)::ctx
-
-let addname ctx x = addbinding ctx x NameBind
-
-let rec isnamebound ctx x =
-  match ctx with
-      [] -> false
-    | (y,_)::rest ->
-        if y=x then true
-        else isnamebound rest x
-
-let rec pickfreshname ctx x =
-  if isnamebound ctx x then pickfreshname ctx (x^"'")
-  else ((x,NameBind)::ctx), x
+let addname ctx x = x::ctx
 
 let index2name fi ctx x =
   try
-    let (xn,_) = List.nth ctx x in
-    xn
+    List.nth ctx x
   with Failure _ ->
     let msg =
       Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d" in
@@ -36,18 +22,20 @@ let index2name fi ctx x =
 let rec name2index fi ctx x =
   match ctx with
       [] -> error fi ("Identifier " ^ x ^ " is unbound")
-    | (y,_)::rest ->
+    | y::rest ->
         if y=x then 0
         else 1 + (name2index fi rest x)
 
-let getbinding fi ctx i =
-  try
-    let (_,bind) = List.nth ctx i in
-    bind 
-  with Failure _ ->
-    let msg =
-      Printf.sprintf "Variable lookup failure: offset: %d, ctx size: %d" in
-    error fi (msg i (List.length ctx))
+let rec isnamebound ctx x =
+  match ctx with
+      [] -> false
+    | y::rest ->
+        if y=x then true
+        else isnamebound rest x
+
+let rec pickfreshname ctx x =
+  if isnamebound ctx x then pickfreshname ctx (x^"'")
+  else (addname ctx x), x
 
 (* ------------------  SHIFTING AND SUBSTITUTION ----------------- *)
 
@@ -131,14 +119,11 @@ and printtm_ATerm outer ctx t = match t with
       else
         pr ("[bad index: " ^ (string_of_int x) ^ "/" ^ (string_of_int n)
             ^ " in {"
-            ^ (List.fold_left (fun s (x,_) -> s ^ " " ^ x) "" ctx)
+            ^ (List.fold_left (fun s x -> s ^ " " ^ x) "" ctx)
             ^ " }]")
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
 let printtm ctx t = printtm_Term true ctx t 
-
-let prbinding _ctx b = match b with
-    NameBind -> () 
 
 (* ------------------------   EVALUATION  ------------------------ *)
 

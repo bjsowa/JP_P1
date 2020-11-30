@@ -117,18 +117,11 @@ toplevel :
 Command :
   | Term 
       { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
-  | LCID Binder
-      { fun ctx -> ((Bind($1.i,$1.v,$2 ctx)), addname ctx $1.v) }
   | Term EQEQ Term
       { fun ctx -> 
             let t1 = $1 ctx in
             let t2 = $3 ctx in
             (Equal(tmInfo t1, t1, t2)), ctx }
-
-/* Right-hand sides of top-level bindings */
-Binder :
-    SLASH
-      { fun _ctx -> NameBind }
 
 Term :
     AppTerm

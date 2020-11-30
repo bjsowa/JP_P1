@@ -56,9 +56,9 @@ let process_command ctx cmd = match cmd with
       let t' = normalize ctx t in
       printtm_ATerm true ctx t'; force_newline();
       ctx
-  | Bind(_,x,bind) -> 
+  (* | Bind(_,x,bind) -> 
       pr "Binding: "; pr x; pr " "; prbinding ctx bind; force_newline();
-      addbinding ctx x bind
+      addbinding ctx x bind *)
   | Equal(_, t1, t2) ->
       pr "Checking for equality:"; force_newline();
       pr "T1: "; printtm_ATerm false ctx t1; force_newline();
