@@ -41,21 +41,21 @@ let rec pickfreshname ctx x =
 
 let tmmap onvar c t = 
   let rec walk c t = match t with
-    TmVar(fi,x,n) -> onvar fi c x n
+    TmVar(fi,x) -> onvar fi c x
   | TmAbs(fi,x,t2) -> TmAbs(fi,x,walk (c+1) t2)
   | TmApp(fi,t1,t2) -> TmApp(fi,walk c t1,walk c t2)
   in walk c t
 
 let termShiftAbove d c t =
   tmmap
-    (fun fi c x n -> if x>=c then TmVar(fi,x+d,n+d) else TmVar(fi,x,n+d))
+    (fun fi c x -> if x>=c then TmVar(fi,x+d) else TmVar(fi,x))
     c t
 
 let termShift d t = termShiftAbove d 0 t
 
 let termSubst j s t =
   tmmap
-    (fun fi c x n -> if x=j+c then termShift c s else TmVar(fi,x,n))
+    (fun fi c x -> if x=j+c then termShift c s else TmVar(fi,x))
     0
     t
 
@@ -65,7 +65,7 @@ let termSubstTop s t =
 (* --------------------  EXTRACTING FILE INFO  ------------------- *)
 
 let tmInfo t = match t with
-    TmVar(fi,_,_) -> fi
+    TmVar(fi,_) -> fi
   | TmAbs(fi,_,_) -> fi
   | TmApp(fi, _, _) -> fi 
 
@@ -91,7 +91,7 @@ let break() = print_break 0 0
 
 let small t = 
   match t with
-    TmVar(_,_,_) -> true
+    TmVar(_,_) -> true
   | _ -> false
 
 let rec printtm_Term outer ctx t = match t with
@@ -113,14 +113,7 @@ and printtm_AppTerm outer ctx t = match t with
   | t -> printtm_ATerm outer ctx t
 
 and printtm_ATerm outer ctx t = match t with
-    TmVar(fi,x,n) ->
-      if ctxlength ctx = n then
-        pr (index2name fi ctx x)
-      else
-        pr ("[bad index: " ^ (string_of_int x) ^ "/" ^ (string_of_int n)
-            ^ " in {"
-            ^ (List.fold_left (fun s x -> s ^ " " ^ x) "" ctx)
-            ^ " }]")
+    TmVar(fi,x) -> pr (index2name fi ctx x)
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
 let printtm ctx t = printtm_Term true ctx t 
@@ -130,7 +123,7 @@ let printtm ctx t = printtm_Term true ctx t
 exception NoRuleApplies
 
 let isval t = match t with
-  | TmVar(_,_,_) -> true
+  | TmVar(_,_) -> true
   | _ -> false
 
 let rec eval1_cbn ctx t =
@@ -171,6 +164,6 @@ let rec check_equal ctx t1 t2 =
       check_equal ctx t1 t2
   | (TmApp(_, t11, t12), TmApp(_, t21, t22)) ->
       check_equal ctx t11 t21 && check_equal ctx t12 t22
-  | (TmVar(_, x1, _), TmVar(_, x2, _)) ->
+  | (TmVar(_, x1), TmVar(_, x2)) ->
       x1 == x2
   | _ -> false

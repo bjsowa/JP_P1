@@ -11,7 +11,7 @@ open Support.Error
   | App of info *  *)
 
 type term =
-    TmVar of info * int * int
+    TmVar of info * int
   | TmAbs of info * string * term
   | TmApp of info * term * term
 

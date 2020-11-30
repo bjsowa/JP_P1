@@ -150,8 +150,8 @@ ATerm :
       { $2 } 
   | LCID 
       { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
-  | TRUE 
+          TmVar($1.i, name2index $1.i ctx $1.v) }
+  /* | TRUE 
       { fun ctx ->
           TmAbs($1, "t", TmAbs($1, "f", TmVar($1, 1, 2 + ctxlength ctx))) }
   | FALSE
@@ -275,6 +275,6 @@ ATerm :
                 TmAbs($1, "t", TmAbs($1, "f", TmVar($1, 0, 2 + ctxlength ctx)))
             ) ),
             $2 ctx
-          ) }
+          ) } */
 
 /*   */
