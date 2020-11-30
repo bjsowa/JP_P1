@@ -15,7 +15,7 @@ let rec eval1_cbn ctx t =
     TmApp(_, TmAbs(_, _, t1), t2) ->
       termSubstTop t2 t1
   | TmApp(fi, v1, t2) when isval v1 ->
-      pr "DEBUG eval: "; printtm_ATerm true ctx t; force_newline(); 
+      (* pr "DEBUG eval: "; printtm_ATerm true ctx t; force_newline();  *)
       let t2' = eval1_cbn ctx t2 in
       TmApp(fi, v1, t2')  
   | TmApp(fi, t1, t2) ->

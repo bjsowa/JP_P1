@@ -140,6 +140,23 @@ Term :
       { fun ctx ->
           let ctx1 = addname ctx "_" in
           TmAbs($1, "_", $4 ctx1) }
+
+AppTerm :
+    ATerm
+      { $1 }
+  | AppTerm ATerm
+      { fun ctx ->
+          let e1 = $1 ctx in
+          let e2 = $2 ctx in
+          TmApp(tmInfo e1,e1,e2) }
+
+/* Atomic terms are ones that never require extra parentheses */
+ATerm :
+    LPAREN Term RPAREN  
+      { $2 } 
+  | LCID 
+      { fun ctx ->
+          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
   | TRUE 
       { fun ctx ->
           TmAbs($1, "t", TmAbs($1, "f", TmVar($1, 1, 2 + ctxlength ctx))) }
@@ -156,10 +173,10 @@ Term :
                 TmApp($1.i, TmVar($1.i, 1, cl), church (n-1))
           ) in
           TmAbs($1.i, "s", TmAbs($1.i, "z", church $1.v)) }
-  | IF Term Term Term
+  | IF ATerm ATerm ATerm
       { fun ctx ->
           TmApp($1, TmApp($1, $2 ctx, $3 ctx), $4 ctx) }
-  | ADD Term Term
+  | ADD ATerm ATerm
       { fun ctx ->
           TmApp($1,
             TmApp($1,
@@ -183,7 +200,7 @@ Term :
             ),
             $3 ctx
           ) }
-  | MULT Term Term
+  | MULT ATerm ATerm
       { fun ctx ->
           TmApp($1,
             TmApp($1,
@@ -204,7 +221,7 @@ Term :
             ),
             $3 ctx
           ) }
-  | FIX Term
+  | FIX ATerm
       { fun ctx ->
           TmApp($1,
             TmAbs($1, "f",
@@ -227,7 +244,7 @@ Term :
             ) ) ) ) ),
             $2 ctx
           ) }
-  | PAIR Term Term
+  | PAIR ATerm ATerm
       { fun ctx -> 
           TmApp($1,
             TmApp($1,
@@ -245,7 +262,7 @@ Term :
             ),
             $3 ctx
           ) }
-  | FST Term
+  | FST ATerm
       { fun ctx -> 
           TmApp($1,
             TmAbs($1, "p",
@@ -255,7 +272,7 @@ Term :
             ) ),
             $2 ctx
           ) }
-  | SND Term
+  | SND ATerm
       { fun ctx -> 
           TmApp($1,
             TmAbs($1, "p",
@@ -265,23 +282,5 @@ Term :
             ) ),
             $2 ctx
           ) }
-
-AppTerm :
-    ATerm
-      { $1 }
-  | AppTerm ATerm
-      { fun ctx ->
-          let e1 = $1 ctx in
-          let e2 = $2 ctx in
-          TmApp(tmInfo e1,e1,e2) }
-
-/* Atomic terms are ones that never require extra parentheses */
-ATerm :
-    LPAREN Term RPAREN  
-      { $2 } 
-  | LCID 
-      { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v, ctxlength ctx) }
-    
 
 /*   */
