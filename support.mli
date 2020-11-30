@@ -23,7 +23,7 @@ module Error : sig
   (* An element of the type info represents a "file position": a 
      file name, line number, and character position within the line.  
      Used for printing error messages. *)
-  type info [@@deriving show]
+  type info
   val dummyinfo : info
 
   (* Create file position info: filename lineno column *)

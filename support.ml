@@ -5,7 +5,6 @@ module Error = struct
 exception Exit of int
 
 type info = FI of string * int * int | UNKNOWN
-  [@@deriving show]
 type 'a withinfo = {i: info; v: 'a}
 
 let dummyinfo = UNKNOWN
