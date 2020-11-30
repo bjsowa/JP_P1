@@ -1,0 +1,12 @@
+(executable
+ (name main)
+ (preprocess (pps ppx_deriving.show ppx_deriving.eq))
+ )
+ (ocamllex lexer)
+ (ocamlyacc parser)
+(env
+ (dev
+  (flags (:standard -unsafe-string -warn-error -a)))
+ (release
+  (flags (:standard -unsafe-string -warn-error -a)))
+)
