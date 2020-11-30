@@ -69,6 +69,11 @@ let tmInfo t = match t with
   | TmAbs(fi,_,_) -> fi
   | TmApp(fi, _, _) -> fi 
 
+let tmsInfo t = match t with
+    TmsVar(fi,_) -> fi
+  | TmsAbs(fi,_,_) -> fi
+  | TmsApp(fi, _, _) -> fi 
+
 (* --------------------------  PRINTING  ------------------------- *)
 
 (* The printing functions call these utility functions to insert grouping
@@ -117,6 +122,36 @@ and printtm_ATerm outer ctx t = match t with
   | t -> pr "("; printtm_Term outer ctx t; pr ")"
 
 let printtm ctx t = printtm_Term true ctx t 
+
+
+let smalls t = 
+  match t with
+    TmsVar(_,_) -> true
+  | _ -> false
+
+let rec printtms_Term outer t = match t with
+    TmsAbs(_,x,t2) ->
+      (* (let (ctx',x') = (pickfreshname ctx x) in *)
+      obox(); pr "lambda "; pr x; pr ".";
+      if (smalls t2) && not outer then break() else print_space();
+      printtms_Term outer t2;
+      cbox()
+  | t -> printtms_AppTerm outer t
+
+and printtms_AppTerm outer t = match t with
+    TmsApp(_, t1, t2) ->
+      obox0();
+      printtms_AppTerm false t1;
+      print_space();
+      printtms_ATerm false t2;
+      cbox()
+  | t -> printtms_ATerm outer t
+
+and printtms_ATerm outer t = match t with
+    TmsVar(_,x) -> pr x
+  | t -> pr "("; printtms_Term outer t; pr ")"
+
+let printtms t = printtms_Term true t 
 
 (* ------------------------   EVALUATION  ------------------------ *)
 

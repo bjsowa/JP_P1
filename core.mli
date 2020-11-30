@@ -22,9 +22,12 @@ val termSubstTop: term -> term -> term
 (* Printing *)
 val printtm: context -> term -> unit
 val printtm_ATerm: bool -> context -> term -> unit
+val printtms: term_sugar -> unit
+val printtms_ATerm: bool -> term_sugar -> unit
 
 (* Extracting file info *)
 val tmInfo: term -> info
+val tmsInfo: term_sugar -> info
 
 (* Evaluation *)
 val eval_cbn : context -> term -> term 

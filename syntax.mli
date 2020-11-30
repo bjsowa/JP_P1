@@ -5,10 +5,10 @@
 
 open Support.Error
 
-(* type term_sugar = 
-  | Var of info * string
-  | Abs of info * string * term_sugar
-  | App of info *  *)
+type term_sugar = 
+  | TmsVar of info * string
+  | TmsAbs of info * string * term_sugar
+  | TmsApp of info * term_sugar * term_sugar
 
 type term =
     TmVar of info * int
@@ -18,5 +18,5 @@ type term =
 type context = (string) list
 
 type command =
-  | Eval of info * term
-  | Equal of info * term * term
+  | Eval of info * term_sugar
+  | Equal of info * term_sugar * term_sugar

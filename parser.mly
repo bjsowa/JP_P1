@@ -96,7 +96,7 @@ open Core
 */
 
 %start toplevel
-%type < Syntax.context -> (Syntax.command list * Syntax.context) > toplevel
+%type < Syntax.command list > toplevel
 %%
 
 /* ---------------------------------------------------------------------- */
@@ -106,51 +106,35 @@ open Core
    by a semicolon. */
 toplevel :
     EOF
-      { fun ctx -> [],ctx }
+      { [] }
   | Command SEMI toplevel
-      { fun ctx ->
-          let cmd,ctx = $1 ctx in
-          let cmds,ctx = $3 ctx in
-          cmd::cmds,ctx }
+      { $1::$3 }
 
 /* A top-level command */
 Command :
   | Term 
-      { fun ctx -> (let t = $1 ctx in Eval(tmInfo t,t)),ctx }
+      { Eval(tmsInfo $1, $1) }
   | Term EQEQ Term
-      { fun ctx -> 
-            let t1 = $1 ctx in
-            let t2 = $3 ctx in
-            (Equal(tmInfo t1, t1, t2)), ctx }
+      { Equal(tmsInfo $1, $1, $3) }
 
 Term :
     AppTerm
       { $1 }
   | LAMBDA LCID DOT Term 
-      { fun ctx ->
-          let ctx1 = addname ctx $2.v in
-          TmAbs($1, $2.v, $4 ctx1) }
-  | LAMBDA USCORE DOT Term 
-      { fun ctx ->
-          let ctx1 = addname ctx "_" in
-          TmAbs($1, "_", $4 ctx1) }
+      { TmsAbs($1, $2.v, $4) }
 
 AppTerm :
     ATerm
       { $1 }
   | AppTerm ATerm
-      { fun ctx ->
-          let e1 = $1 ctx in
-          let e2 = $2 ctx in
-          TmApp(tmInfo e1,e1,e2) }
+      { TmsApp(tmsInfo $1, $1, $2) }
 
 /* Atomic terms are ones that never require extra parentheses */
 ATerm :
     LPAREN Term RPAREN  
       { $2 } 
-  | LCID 
-      { fun ctx ->
-          TmVar($1.i, name2index $1.i ctx $1.v) }
+  | LCID
+      { TmsVar($1.i, $1.v) }
   /* | TRUE 
       { fun ctx ->
           TmAbs($1, "t", TmAbs($1, "f", TmVar($1, 1, 2 + ctxlength ctx))) }
