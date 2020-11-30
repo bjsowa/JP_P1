@@ -7,7 +7,7 @@
 (ocamlyacc parser)
 (env
   (dev
-    (flags (:standard -unsafe-string -warn-error -a)))
+    (flags (:standard -unsafe-string)))
   (release
-    (flags (:standard -unsafe-string -warn-error -a)))
+    (flags (:standard -unsafe-string)))
 )
