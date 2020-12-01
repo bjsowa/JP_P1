@@ -52,14 +52,14 @@ let alreadyImported = ref ([] : string list)
 
 let process_command ctx cmd = match cmd with
   | Eval(_,t) -> 
-      pr "Evaluating: "; printtms_ATerm false t; force_newline();
+      pr "Evaluating: "; printtm_cs t; force_newline();
       (* let t' = normalize ctx t in *)
       (* printtm_ATerm true ctx t'; force_newline(); *)
       ctx
   | Equal(_, t1, t2) ->
       pr "Checking for equality:"; force_newline();
-      pr "T1: "; printtms_ATerm false t1; force_newline();
-      pr "T2: "; printtms_ATerm false t2; force_newline();
+      pr "T1: "; printtm_cs t1; force_newline();
+      pr "T2: "; printtm_cs t2; force_newline();
       (* printf "Answer: %b" (check_equal ctx t1 t2); force_newline(); *)
       ctx 
   

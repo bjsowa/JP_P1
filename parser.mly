@@ -121,40 +121,40 @@ Term :
     AppTerm
       { $1 }
   | LAMBDA LCID DOT Term 
-      { TmsAbs($1, $2.v, $4) }
+      { TcsAbs($1, $2.v, $4) }
 
 AppTerm :
     ATerm
       { $1 }
   | AppTerm ATerm
-      { TmsApp(tmsInfo $1, $1, $2) }
+      { TcsApp(tmsInfo $1, $1, $2) }
 
 /* Atomic terms are ones that never require extra parentheses */
 ATerm :
     LPAREN Term RPAREN  
       { $2 } 
   | LCID
-      { TmsVar($1.i, $1.v) }
+      { TcsVar($1.i, $1.v) }
   | TRUE
-      { TmsTrue($1) }
+      { TcsTrue($1) }
   | FALSE
-      { TmsFalse($1) }
+      { TcsFalse($1) }
   | INTV
-      { TmsNum($1.i, $1.v) }
+      { TcsNum($1.i, $1.v) }
   | IF ATerm ATerm ATerm
-      { TmsIf($1, $2, $3, $4) }
+      { TcsIf($1, $2, $3, $4) }
   | ADD ATerm ATerm
-      { TmsAdd($1, $2, $3) }
+      { TcsAdd($1, $2, $3) }
   | MULT ATerm ATerm
-      { TmsMult($1, $2, $3) }
+      { TcsMult($1, $2, $3) }
   | FIX ATerm
-      { TmsFix($1, $2) }
+      { TcsFix($1, $2) }
   | PAIR ATerm ATerm
-      { TmsPair($1, $2, $3) }
+      { TcsPair($1, $2, $3) }
   | FST ATerm
-      { TmsFst($1, $2) }
+      { TcsFst($1, $2) }
   | SND ATerm
-      { TmsSnd($1, $2) }
+      { TcsSnd($1, $2) }
   /* | TRUE 
       { fun ctx ->
           TmAbs($1, "t", TmAbs($1, "f", TmVar($1, 1, 2 + ctxlength ctx))) }
