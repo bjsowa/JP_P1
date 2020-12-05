@@ -144,8 +144,8 @@ let rec bind_free_variables1 ctx_free ctx_bound t = match t with
   | TcsAbs(_,x,t1) ->
       let ctx_bound1 = addname ctx_bound x in
       bind_free_variables1 ctx_free ctx_bound1 t1
-  | TcsApp(_,t1,t2) -> 
-      let ctx_free1 = bind_free_variables1 ctx_free ctx_bound t1 in
+  | TcsApp(_,t1,t2) | TcsAdd(_,t1,t2) | TcsMult(_,t1,t2) | TcsPair(_,t1,t2) -> 
+    let ctx_free1 = bind_free_variables1 ctx_free ctx_bound t1 in
       bind_free_variables1 ctx_free1 ctx_bound t2
   | _ -> ctx_free
 
@@ -166,6 +166,12 @@ let rec convert_term ctx t = match t with
       let t21 = convert_term ctx t11 in
       let t22 = convert_term ctx t12 in
       TApp(fi,t21,t22)
+  | TcsNum(fi,x) ->
+      let rec church n = (
+        if n == 0 then TVar(fi, 0)
+        else TApp(fi, TVar(fi, 1), church (n-1))
+      ) in
+      TAbs(fi, "s", TAbs(fi, "z", church x))
   | _ -> convert_term ctx t
 
 (* -------------------------  EVALUATION  ------------------------ *)
