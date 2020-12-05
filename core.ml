@@ -134,71 +134,62 @@ and printtm_ATerm outer ctx t = match t with
 
 let printtm ctx t = printtm_Term true ctx t 
 
+(* ----------------------  CONVERTING TERMS  --------------------- *)
 
-let small_cs t = 
-  match t with
-    TcsVar(_,_) -> true
-  | _ -> false
+let rec bind_free_variables1 ctx_free ctx_bound t = match t with
+  | TcsVar(_,x) ->
+      if not (isnamebound ctx_bound x)
+      then addname ctx_free x
+      else ctx_free
+  | TcsAbs(_,x,t1) ->
+      let ctx_bound1 = addname ctx_bound x in
+      bind_free_variables1 ctx_free ctx_bound1 t1
+  | TcsApp(_,t1,t2) -> 
+      let ctx_free1 = bind_free_variables1 ctx_free ctx_bound t1 in
+      bind_free_variables1 ctx_free1 ctx_bound t2
+  | _ -> ctx_free
 
-let rec printtm_cs_Term outer t = match t with
-    TcsAbs(_,x,t2) ->
-      (* (let (ctx',x') = (pickfreshname ctx x) in *)
-      obox(); pr "lambda "; pr x; pr ".";
-      if (small_cs t2) && not outer then break() else print_space();
-      printtm_cs_Term outer t2;
-      cbox()
-  | t -> printtm_cs_AppTerm outer t
+(* Find unbound variables and add them to the context *)
+let bind_free_variables ctx t = 
+  bind_free_variables1 ctx emptycontext t
 
-and printtm_cs_AppTerm outer t = match t with
-    TcsApp(_, t1, t2) ->
-      obox0();
-      printtm_cs_AppTerm false t1;
-      print_space();
-      printtm_cs_ATerm false t2;
-      cbox()
-  | t -> printtm_cs_ATerm outer t
+(* Convert term in concrete syntax to abstract syntax *)
+let rec convert_term ctx t = match t with
+  | TcsVar(fi,x) ->
+      let x1 = name2index fi ctx x in
+      TVar(fi,x1)
+  | TcsAbs(fi,x,t1) ->
+      let ctx1 = addname ctx x in
+      let t2 = convert_term ctx1 t1 in
+      TAbs(fi,x,t2)
+  | TcsApp(fi,t11,t12) ->
+      let t21 = convert_term ctx t11 in
+      let t22 = convert_term ctx t12 in
+      TApp(fi,t21,t22)
+  | _ -> convert_term ctx t
 
-and printtm_cs_ATerm outer t = match t with
-    TcsVar(_,x) -> pr x
-  | TcsTrue(_) -> pr "true"
-  | TcsFalse(_) -> pr "false"
-  | TcsAdd(_, t1, t2) ->
-      obox(); pr "add ";
-      printtm_cs_ATerm false t1;
-      print_space();
-      printtm_cs_ATerm false t2;
-      cbox()
-  | t -> pr "("; printtm_cs_Term outer t; pr ")"
-
-let printtm_cs t = printtm_cs_Term true t 
-
-(* ------------------------   EVALUATION  ------------------------ *)
+(* -------------------------  EVALUATION  ------------------------ *)
 
 exception NoRuleApplies
 
-let isval t = match t with
-  | TVar(_,_) -> true
-  | _ -> false
-
-let rec eval1_cbn ctx t =
+(* Take one step in the CBN reduction *)
+let rec step_cbn ctx t =
   match t with 
     TApp(_, TAbs(_, _, t1), t2) ->
       termSubstTop t2 t1
-  | TApp(fi, v1, t2) when isval v1 ->
-      (* pr "DEBUG eval: "; printtm_ATerm true ctx t; force_newline();  *)
-      let t2' = eval1_cbn ctx t2 in
-      TApp(fi, v1, t2')  
   | TApp(fi, t1, t2) ->
-      let t1' = eval1_cbn ctx t1 in
+      let t1' = step_cbn ctx t1 in
       TApp(fi, t1', t2)
   | _ ->
       raise NoRuleApplies
 
+(* Evaluate term using CBN strategy *)
 let rec eval_cbn ctx t =
-  try let t' = eval1_cbn ctx t
+  try let t' = step_cbn ctx t
       in eval_cbn ctx t'
   with NoRuleApplies -> t
 
+(* Evaluate to a normal form *)
 let rec normalize ctx t =
   let t' = eval_cbn ctx t in match t' with
     TAbs(fi, x, t1) -> 
@@ -210,6 +201,7 @@ let rec normalize ctx t =
       TApp(fi, t1, t2')
   | _ -> t'
 
+(* Check beta-equality of two terms *)
 let rec check_equal ctx t1 t2 = 
   let t1_whnf = eval_cbn ctx t1 in
   let t2_whnf = eval_cbn ctx t2 in 

@@ -48,36 +48,28 @@ let parseFile inFile =
 in
   Parsing.clear_parser(); close_in pi; result
 
-let alreadyImported = ref ([] : string list)
-
-let process_command ctx cmd = match cmd with
+let process_command cmd = match cmd with
   | Eval(_,t) -> 
-      pr "Evaluating: "; printtm_cs t; force_newline();
-      (* let t' = normalize ctx t in *)
-      (* printtm_ATerm true ctx t'; force_newline(); *)
-      ctx
+      let ctx = bind_free_variables emptycontext t in
+      let t = convert_term ctx t in
+      pr "Evaluating: "; printtm ctx t; force_newline();
+      (* pr "Context: "; List.iter (fun s -> pr s; pr ", ") ctx; force_newline(); *)
+      let t = normalize ctx t in 
+      printtm ctx t; force_newline();
   | Equal(_, t1, t2) ->
+      let ctx = bind_free_variables emptycontext t1 in
+      let ctx = bind_free_variables ctx t2 in
+      let t1 = convert_term ctx t1 in
+      let t2 = convert_term ctx t2 in
       pr "Checking for equality:"; force_newline();
-      pr "T1: "; printtm_cs t1; force_newline();
-      pr "T2: "; printtm_cs t2; force_newline();
-      (* printf "Answer: %b" (check_equal ctx t1 t2); force_newline(); *)
-      ctx 
+      pr "T1: "; printtm ctx t1; force_newline();
+      pr "T2: "; printtm ctx t2; force_newline();
+      printf "Answer: %b" (check_equal ctx t1 t2); force_newline()
   
-let process_file f ctx =
-  alreadyImported := f :: !alreadyImported;
-  let cmds = parseFile f in
-  let g ctx c =  
-    open_hvbox 0;
-    let results = process_command ctx c in
-    print_flush();
-    results
-  in
-    List.fold_left g ctx cmds
-
 let main () = 
   let inFile = parseArgs() in
-  let _ = process_file inFile emptycontext in
-  ()
+  let cmds = parseFile inFile in
+  List.iter process_command cmds
 
 let () = set_max_boxes 1000
 let () = set_margin 67
