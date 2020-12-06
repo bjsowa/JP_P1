@@ -6,6 +6,7 @@
   lambda x. x x
   x y
   lambda x. lambda x'. x' z
+  lambda x. x x
 
   $ ../main.exe sugar.f
   lambda s. lambda z. s (s (s (s (s z))))
@@ -51,6 +52,10 @@
   lambda t. lambda f. t
   lambda t. lambda f. t
   lambda t. lambda f. f
+  lambda t. lambda f. f
+  lambda b. b (lambda x.x) (lambda x.x)
+  lambda t. lambda f. f
+  lambda s. lambda z. z
 
   $ ../main.exe equal.f
   false

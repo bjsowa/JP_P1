@@ -17,3 +17,7 @@ eq 8 9; eq 10 10;
 succ 0; succ 5;
 leq 4 5; leq 5 1; leq 5 5;
 iszero 0; iszero 2;
+if true (lambda x. x) (lambda y. y) false;
+pair (lambda x. x) (lambda x. x);
+if false true false;
+mult 0 10;
