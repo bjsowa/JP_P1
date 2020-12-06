@@ -2,22 +2,22 @@ open Syntax
 
 (* Booleans *)
 
-let ftrue fi = 
+let ftrue fi = (* λt. λf. t *)
   TAbs(fi, "t", TAbs(fi, "f", TVar(fi, 1)))
 
-let ffalse fi = 
+let ffalse fi = (* λt. λf. f *)
   TAbs(fi, "t", TAbs(fi, "f", TVar(fi, 0)))
 
 (* Numerals *)
 
-let num fi n =
+let num fi n = (* λs. λz. s (s (s ... ( s z ) ... ) *)
   let rec church n = (
     if n == 0 then TVar(fi, 0)
     else TApp(fi, TVar(fi, 1), church (n-1))
   ) in
   TAbs(fi, "s", TAbs(fi, "z", church n))
 
-let add fi = 
+let add fi = (* λm. λn. λs. λz. m s (n s z) *)
   TAbs(fi, "m", 
     TAbs(fi, "n", 
       TAbs(fi, "s", 
@@ -33,7 +33,7 @@ let add fi =
               ),
               TVar(fi, 0) ) ) ) ) ) )
 
-let mult fi =
+let mult fi = (* λm. λn. λs. λz. m (n s) z *)
   TAbs(fi, "m", 
     TAbs(fi, "n", 
       TAbs(fi, "s", 
@@ -46,9 +46,9 @@ let mult fi =
                 TVar(fi, 1) ) ),
             TVar(fi, 0) ) ) ) ) )
 
-(* Y-combinator *)
+(* Fixed-point combinator *)
 
-let fix fi = 
+let fix fi = (* λf. (λx. f (x x)) (λx. f (x x)) *)
   TAbs(fi, "f",
     TApp(fi,
       TAbs(fi, "x",
@@ -66,7 +66,7 @@ let fix fi =
 
 (* Pairs *)
 
-let pair fi =
+let pair fi = (* λf. λs. λb. b f s *)
   TAbs(fi, "f",
     TAbs(fi, "s",
       TAbs(fi, "b",
@@ -76,20 +76,21 @@ let pair fi =
             TVar(fi, 2)),
           TVar(fi, 1) ) ) ) )
 
-let fst fi =
+let fst fi = (* λp. p true *)
   TAbs(fi, "p", TApp(fi, TVar(fi, 0), ftrue fi))
 
-let snd fi =
+let snd fi = (* λp. p false *)
   TAbs(fi, "p", TApp(fi, TVar(fi, 0), ffalse fi))
 
 (* Lists *)
 
-let nil fi =
+let nil fi = (* pair true true *)
   TApp(fi, TApp(fi, pair fi, ftrue fi), ftrue fi)
 
-let isnil fi = fst fi
+let isnil fi = (* fst *)
+  fst fi
 
-let cons fi =
+let cons fi = (* λh. λt. pair false (pair h t) *)
   TAbs(fi, "h",
     TAbs(fi, "t",
       TApp(fi,
@@ -102,7 +103,7 @@ let cons fi =
             TVar(fi, 1) ),
           TVar(fi, 0) ) ) ) )
 
-let head fi =
+let head fi = (* λz. fst (snd z) *)
   TAbs(fi, "z",
     TApp(fi, 
       fst fi,
@@ -110,7 +111,7 @@ let head fi =
         snd fi,
         TVar(fi, 0) ) ) )
 
-let tail fi =
+let tail fi = (* λz. snd (snd z) *)
   TAbs(fi, "z",
     TApp(fi, 
       snd fi,
