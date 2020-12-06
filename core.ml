@@ -144,9 +144,20 @@ let rec bind_free_variables1 ctx_free ctx_bound t = match t with
   | TcsAbs(_,x,t1) ->
       let ctx_bound1 = addname ctx_bound x in
       bind_free_variables1 ctx_free ctx_bound1 t1
-  | TcsApp(_,t1,t2) | TcsAdd(_,t1,t2) | TcsMult(_,t1,t2) | TcsPair(_,t1,t2) -> 
-    let ctx_free1 = bind_free_variables1 ctx_free ctx_bound t1 in
+  | TcsApp(_,t1,t2) 
+  | TcsAdd(_,t1,t2)
+  | TcsMult(_,t1,t2)
+  | TcsPair(_,t1,t2) -> 
+      let ctx_free1 = bind_free_variables1 ctx_free ctx_bound t1 in
       bind_free_variables1 ctx_free1 ctx_bound t2
+  | TcsIf(_,t1,t2,t3) ->
+      let ctx_free1 = bind_free_variables1 ctx_free ctx_bound t1 in
+      let ctx_free1 = bind_free_variables1 ctx_free1 ctx_bound t2 in
+      bind_free_variables1 ctx_free1 ctx_bound t3
+  | TcsFix(_,t)
+  | TcsFst(_,t)
+  | TcsSnd(_,t) ->
+      bind_free_variables1 ctx_free ctx_bound t
   | _ -> ctx_free
 
 (* Find unbound variables and add them to the context *)
@@ -156,23 +167,52 @@ let bind_free_variables ctx t =
 (* Convert term in concrete syntax to abstract syntax *)
 let rec convert_term ctx t = match t with
   | TcsVar(fi,x) ->
-      let x1 = name2index fi ctx x in
-      TVar(fi,x1)
-  | TcsAbs(fi,x,t1) ->
+      let xi = name2index fi ctx x in
+      TVar(fi,xi)
+  | TcsAbs(fi,x,t) ->
       let ctx1 = addname ctx x in
-      let t2 = convert_term ctx1 t1 in
-      TAbs(fi,x,t2)
-  | TcsApp(fi,t11,t12) ->
-      let t21 = convert_term ctx t11 in
-      let t22 = convert_term ctx t12 in
-      TApp(fi,t21,t22)
+      let t = convert_term ctx1 t in
+      TAbs(fi,x,t)
+  | TcsApp(fi,t1,t2) ->
+      let t1 = convert_term ctx t1 in
+      let t2 = convert_term ctx t2 in
+      TApp(fi,t1,t2)
   | TcsNum(fi,x) ->
       let rec church n = (
         if n == 0 then TVar(fi, 0)
         else TApp(fi, TVar(fi, 1), church (n-1))
       ) in
       TAbs(fi, "s", TAbs(fi, "z", church x))
-  | _ -> convert_term ctx t
+  | TcsTrue(fi) ->
+      Sugar.ftrue fi
+  | TcsFalse(fi) ->
+      Sugar.ffalse fi
+  | TcsIf(fi,t1,t2,t3) ->
+      let t1 = convert_term ctx t1 in
+      let t2 = convert_term ctx t2 in
+      let t3 = convert_term ctx t3 in
+      TApp(fi, TApp(fi, t1, t2), t3)
+  | TcsAdd(fi,t1,t2) ->
+      let t1 = convert_term ctx t1 in
+      let t2 = convert_term ctx t2 in
+      TApp(fi, TApp(fi, Sugar.add fi, t1), t2)
+  | TcsMult(fi,t1,t2) ->
+      let t1 = convert_term ctx t1 in
+      let t2 = convert_term ctx t2 in
+      TApp(fi, TApp(fi, Sugar.mult fi, t1 ), t2 )
+  | TcsFix(fi,t) ->
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.fix fi, t)
+  | TcsPair(fi,t1,t2) ->
+      let t1 = convert_term ctx t1 in
+      let t2 = convert_term ctx t2 in
+      TApp(fi, TApp(fi, Sugar.pair fi, t1), t2)
+  | TcsFst(fi,t) ->
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.fst fi, t)
+  | TcsSnd(fi,t) ->
+        let t = convert_term ctx t in
+        TApp(fi, Sugar.snd fi, t)
 
 (* -------------------------  EVALUATION  ------------------------ *)
 
