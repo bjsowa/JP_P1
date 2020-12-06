@@ -5,11 +5,3 @@
 (ocamllex lexer)
 
 (ocamlyacc parser)
-
-(env
- (dev
-  (flags
-   (:standard -unsafe-string)))
- (release
-  (flags
-   (:standard -unsafe-string))))
