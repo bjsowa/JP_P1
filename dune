@@ -5,3 +5,6 @@
 (ocamllex lexer)
 
 (ocamlyacc parser)
+
+(cram
+ (deps ./main.exe))
