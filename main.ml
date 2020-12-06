@@ -12,11 +12,16 @@ open Syntax
 open Core
 
 let searchpath = ref [""]
+let verbose = ref false
 
 let argDefs = [
-  "-I",
-      Arg.String (fun f -> searchpath := f::!searchpath),
-      "Append a directory to the search path"]
+  ("-I",
+    Arg.String (fun f -> searchpath := f::!searchpath),
+    "Append a directory to the search path");
+  ("-v", 
+    Arg.Set verbose,
+    "Enable verbose mode");
+]
 
 let parseArgs () =
   let inFile = ref (None : string option) in
@@ -52,8 +57,10 @@ let process_command cmd = match cmd with
   | Eval(_,t) -> 
       let ctx = bind_free_variables emptycontext t in
       let t = convert_term ctx t in
-      pr "Evaluating: "; printtm ctx t; force_newline();
-      pr "Context: "; List.iter (fun s -> pr s; pr ", ") ctx; force_newline();
+      if !verbose then (
+        pr "Evaluating: "; printtm ctx t; force_newline();
+        pr "Context: "; List.iter (fun s -> pr s; pr ", ") ctx; force_newline();
+      );
       let t = normalize ctx t in 
       printtm ctx t; force_newline();
   | Equal(_, t1, t2) ->
@@ -61,10 +68,12 @@ let process_command cmd = match cmd with
       let ctx = bind_free_variables ctx t2 in
       let t1 = convert_term ctx t1 in
       let t2 = convert_term ctx t2 in
-      pr "Checking for equality:"; force_newline();
-      pr "T1: "; printtm ctx t1; force_newline();
-      pr "T2: "; printtm ctx t2; force_newline();
-      printf "Answer: %b" (check_equal ctx t1 t2); force_newline()
+      if !verbose then (
+        pr "Checking for equality:"; force_newline();
+        pr "T1: "; printtm ctx t1; force_newline();
+        pr "T2: "; printtm ctx t2; force_newline();
+      );
+      printf "%b" (check_equal ctx t1 t2); force_newline()
   
 let main () = 
   let inFile = parseArgs() in
