@@ -18,6 +18,7 @@ let reservedWords = [
   ("add", fun i -> Parser.ADD i);
   ("mult", fun i -> Parser.MULT i);
   ("sub", fun i -> Parser.SUB i);
+  ("eq", fun i -> Parser.EQ i);
   ("fix", fun i -> Parser.FIX i);
   ("pair", fun i -> Parser.PAIR i);
   ("fst", fun i -> Parser.FST i);

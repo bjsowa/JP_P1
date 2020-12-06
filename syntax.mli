@@ -16,6 +16,7 @@ type term_cs =
   | TcsAdd of info * term_cs * term_cs
   | TcsMult of info * term_cs * term_cs
   | TcsSub of info * term_cs * term_cs
+  | TcsEq of info * term_cs * term_cs
   | TcsFix of info * term_cs
   | TcsPair of info * term_cs * term_cs
   | TcsFst of info * term_cs

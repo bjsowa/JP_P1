@@ -1,5 +1,6 @@
 open Syntax
 
+
 (* Booleans *)
 
 let ftrue fi = (* λt. λf. t *)
@@ -7,6 +8,7 @@ let ftrue fi = (* λt. λf. t *)
 
 let ffalse fi = (* λt. λf. f *)
   TAbs(fi, "t", TAbs(fi, "f", TVar(fi, 0)))
+
 
 (* Numerals *)
 
@@ -86,12 +88,44 @@ let sub fi = (* λm. λn. n pred m *)
           TVar(fi, 0),
           pred fi),
         TVar(fi, 1) ) ) )
-(*
-let iszero fi =
 
-let leq fi =
+let iszero fi = (* λn. n (λx. false) true *)
+  TAbs(fi, "n",
+    TApp(fi,
+      TApp(fi,
+        TVar(fi, 0),
+        TAbs(fi, "x",
+          ffalse fi) ),
+      ftrue fi) )
 
-let eq fi = *)
+let leq fi = (* λm. λn. iszero (sub m n) *)
+  TAbs(fi, "m",
+    TAbs(fi, "n",
+      TApp(fi,
+        iszero fi,
+        TApp(fi,
+          TApp(fi,
+            sub fi,
+            TVar(fi, 1) ),
+          TVar(fi, 0) ) ) ) )
+
+let eq fi = (* λm. λn. (leq m n) (leq n m) false *)
+  TAbs(fi, "m",
+    TAbs(fi, "n",
+      TApp(fi,
+        TApp(fi,
+          TApp(fi,
+            TApp(fi,
+              leq fi,
+              TVar(fi, 1) ),
+            TVar(fi, 0) ),
+          TApp(fi,
+            TApp(fi,
+              leq fi,
+              TVar(fi, 0) ),
+            TVar(fi, 1) ) ),
+        ffalse fi ) ) )
+    
 
 (* Fixed-point combinator *)
 
@@ -111,6 +145,7 @@ let fix fi = (* λf. (λx. f (x x)) (λx. f (x x)) *)
             TVar(fi, 0),
             TVar(fi, 0) ) ) ) ) )
 
+
 (* Pairs *)
 
 let pair fi = (* λf. λs. λb. b f s *)
@@ -128,6 +163,7 @@ let fst fi = (* λp. p true *)
 
 let snd fi = (* λp. p false *)
   TAbs(fi, "p", TApp(fi, TVar(fi, 0), ffalse fi))
+
 
 (* Lists *)
 
