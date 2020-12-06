@@ -79,7 +79,11 @@ let tmsInfo t = match t with
   | TcsIf(fi,_,_,_) -> fi
   | TcsAdd(fi,_,_) -> fi
   | TcsMult(fi,_,_) -> fi
+  | TcsSucc(fi,_) -> fi
+  | TcsPred(fi,_) -> fi
   | TcsSub(fi,_,_) -> fi
+  | TcsIszero(fi,_) -> fi
+  | TcsLeq(fi,_,_) -> fi
   | TcsEq(fi,_,_) -> fi
   | TcsFix(fi,_) -> fi
   | TcsPair(fi,_,_) -> fi
@@ -154,6 +158,7 @@ let rec bind_free_variables1 ctx_free ctx_bound t = match t with
   | TcsAdd(_,t1,t2)
   | TcsMult(_,t1,t2)
   | TcsSub(_,t1,t2)
+  | TcsLeq(_,t1,t2)
   | TcsEq(_,t1,t2)
   | TcsPair(_,t1,t2)
   | TcsCons(_,t1,t2) -> 
@@ -163,6 +168,9 @@ let rec bind_free_variables1 ctx_free ctx_bound t = match t with
       let ctx_free1 = bind_free_variables1 ctx_free ctx_bound t1 in
       let ctx_free1 = bind_free_variables1 ctx_free1 ctx_bound t2 in
       bind_free_variables1 ctx_free1 ctx_bound t3
+  | TcsSucc(_,t)
+  | TcsPred(_,t)
+  | TcsIszero(_,t)
   | TcsFix(_,t)
   | TcsFst(_,t)
   | TcsSnd(_,t)
@@ -208,10 +216,23 @@ let rec convert_term ctx t = match t with
       let t1 = convert_term ctx t1 in
       let t2 = convert_term ctx t2 in
       TApp(fi, TApp(fi, Sugar.mult fi, t1 ), t2 )
+  | TcsSucc(fi,t) ->
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.succ fi, t)
+  | TcsPred(fi,t) ->
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.pred fi, t)
   | TcsSub(fi,t1,t2) ->
       let t1 = convert_term ctx t1 in
       let t2 = convert_term ctx t2 in
       TApp(fi, TApp(fi, Sugar.sub fi, t1 ), t2 )
+  | TcsIszero(fi,t) ->
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.iszero fi, t)
+  | TcsLeq(fi,t1,t2) ->
+      let t1 = convert_term ctx t1 in
+      let t2 = convert_term ctx t2 in
+      TApp(fi, TApp(fi, Sugar.leq fi, t1 ), t2 )
   | TcsEq(fi,t1,t2) ->
       let t1 = convert_term ctx t1 in
       let t2 = convert_term ctx t2 in

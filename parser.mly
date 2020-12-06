@@ -28,7 +28,11 @@ open Core
 %token <Support.Error.info> IF
 %token <Support.Error.info> ADD
 %token <Support.Error.info> MULT
+%token <Support.Error.info> SUCC
+%token <Support.Error.info> PRED
 %token <Support.Error.info> SUB
+%token <Support.Error.info> ISZERO
+%token <Support.Error.info> LEQ
 %token <Support.Error.info> EQ
 %token <Support.Error.info> FIX
 %token <Support.Error.info> PAIR
@@ -139,8 +143,16 @@ ATerm :
       { TcsAdd($1, $2, $3) }
   | MULT ATerm ATerm
       { TcsMult($1, $2, $3) }
+  | SUCC ATerm
+      { TcsSucc($1, $2) }
+  | PRED ATerm
+      { TcsPred($1, $2) }
   | SUB ATerm ATerm
       { TcsSub($1, $2, $3) }
+  | ISZERO ATerm
+      { TcsIszero($1, $2) }
+  | LEQ ATerm ATerm
+      { TcsLeq($1, $2, $3) }
   | EQ ATerm ATerm
       { TcsEq($1, $2, $3) }
   | FIX ATerm
