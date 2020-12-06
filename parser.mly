@@ -28,6 +28,7 @@ open Core
 %token <Support.Error.info> IF
 %token <Support.Error.info> ADD
 %token <Support.Error.info> MULT
+%token <Support.Error.info> SUB
 %token <Support.Error.info> FIX
 %token <Support.Error.info> PAIR
 %token <Support.Error.info> FST
@@ -137,6 +138,8 @@ ATerm :
       { TcsAdd($1, $2, $3) }
   | MULT ATerm ATerm
       { TcsMult($1, $2, $3) }
+  | SUB ATerm ATerm
+      { TcsSub($1, $2, $3) }
   | FIX ATerm
       { TcsFix($1, $2) }
   | PAIR ATerm ATerm

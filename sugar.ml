@@ -46,6 +46,53 @@ let mult fi = (* λm. λn. λs. λz. m (n s) z *)
                 TVar(fi, 1) ) ),
             TVar(fi, 0) ) ) ) ) )
 
+let succ fi = (* λn. λs. λz. s (n s z) *)
+  TAbs(fi, "n",
+    TAbs(fi, "s",
+      TAbs(fi, "z",
+        TApp(fi,
+          TVar(fi, 1),
+          TApp(fi,
+            TApp(fi,
+              TVar(fi, 2),
+              TVar(fi, 1) ),
+            TVar(fi, 0) ) ) ) ) )
+
+let pred fi = (* λn. λs. λz. n (λg. λh. h (g s)) (λu. z) (λu. u) *)
+  TAbs(fi, "n",
+    TAbs(fi, "s",
+      TAbs(fi, "z",
+        TApp(fi,
+          TApp(fi,
+            TApp(fi,
+              TVar(fi, 2),
+              TAbs(fi, "g",
+                TAbs(fi, "h",
+                  TApp(fi,
+                    TVar(fi, 0),
+                    TApp(fi,
+                      TVar(fi, 1),
+                      TVar(fi, 3) ) ) ) ) ),
+            TAbs(fi, "u",
+              TVar(fi, 1) ) ),
+          TAbs(fi, "u",
+            TVar(fi, 0) ) ) ) ) )
+   
+let sub fi = (* λm. λn. n pred m *)
+  TAbs(fi, "m",
+    TAbs(fi, "n",
+      TApp(fi,
+        TApp(fi,
+          TVar(fi, 0),
+          pred fi),
+        TVar(fi, 1) ) ) )
+(*
+let iszero fi =
+
+let leq fi =
+
+let eq fi = *)
+
 (* Fixed-point combinator *)
 
 let fix fi = (* λf. (λx. f (x x)) (λx. f (x x)) *)

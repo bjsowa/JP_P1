@@ -1,13 +1,15 @@
 (executable
-  (name main)
-  (preprocess (pps ppx_deriving.show ppx_deriving.eq))
-  (modules_without_implementation syntax)
-)
+ (name main)
+ (modules_without_implementation syntax))
+
 (ocamllex lexer)
+
 (ocamlyacc parser)
+
 (env
-  (dev
-    (flags (:standard -unsafe-string)))
-  (release
-    (flags (:standard -unsafe-string)))
-)
+ (dev
+  (flags
+   (:standard -unsafe-string)))
+ (release
+  (flags
+   (:standard -unsafe-string))))
