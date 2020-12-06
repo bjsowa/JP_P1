@@ -17,10 +17,11 @@ dune test
 ```
 dune exec -- ./main.exe [-v] <plik>
 ```
-`<plik>` musi zawierać polecenia dla normalizatora oddzielone średnikiem.
-Jeśli poleceniem jest term, program wypisze "odcukrzony", znormalizowany term.
-Jeśli poleceniem są dwa termy oddzielone słowem `==`, program sprawdzi beta-równość termów i wypisze `true` albo `false`.
-W folderze `tests.t` znajdują się przykładowe pliki wejściowe dla normalizatora.
+`<plik>` musi zawierać polecenia dla normalizatora oddzielone średnikiem. \
+Jeśli polecenie jest termem, program wypisze "odcukrzony", znormalizowany term. \
+Jeśli poleceniem są dwa termy oddzielone słowem `==`, program sprawdzi beta-równość termów i wypisze `true` albo `false`. \
 Jeśli flaga `-v` jest ustawiona, program wypisze na wyjściu dodatkowe informacje o ewaluowanych termach.
+
+W folderze `tests.t` znajdują się przykładowe pliki wejściowe dla normalizatora.
 
 [dune]: https://github.com/ocaml/dune
