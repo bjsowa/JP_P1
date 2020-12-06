@@ -184,7 +184,7 @@ let rec bind_free_variables1 ctx_free ctx_bound t = match t with
 let bind_free_variables ctx t = 
   bind_free_variables1 ctx emptycontext t
 
-(* Convert term in concrete syntax to abstract syntax *)
+(* Convert term_s to term *)
 let rec convert_term ctx t = match t with
   | TcsVar(fi,x) ->
       let xi = name2index fi ctx x in

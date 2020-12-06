@@ -24,11 +24,11 @@ val printtm: context -> term -> unit
 
 (* Extracting file info *)
 val tmInfo: term -> info
-val tmsInfo: term_cs -> info
+val tmsInfo: term_s -> info
 
-(* Converting terms to abstract syntax *)
-val bind_free_variables: context -> term_cs -> context
-val convert_term: context -> term_cs -> term
+(* Converting terms *)
+val bind_free_variables: context -> term_s -> context
+val convert_term: context -> term_s -> term
 
 (* Evaluation *)
 val eval_cbn : context -> term -> term 
