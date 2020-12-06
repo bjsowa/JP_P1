@@ -22,6 +22,10 @@ let reservedWords = [
   ("fst", fun i -> Parser.FST i);
   ("snd", fun i -> Parser.SND i);
   ("nil", fun i -> Parser.NIL i);
+  ("isnil", fun i -> Parser.ISNIL i);
+  ("cons", fun i -> Parser.CONS i);
+  ("head", fun i -> Parser.HEAD i);
+  ("tail", fun i -> Parser.TAIL i);
 
   (* Symbols *)
   ("_", fun i -> Parser.USCORE i);

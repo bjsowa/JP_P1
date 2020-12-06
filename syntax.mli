@@ -20,10 +20,10 @@ type term_cs =
   | TcsFst of info * term_cs
   | TcsSnd of info * term_cs
   | TcsNil of info
-  (* | TcsCons of info * term_cs * term_cs
+  | TcsIsnil of info * term_cs
+  | TcsCons of info * term_cs * term_cs
   | TcsHead of info * term_cs
   | TcsTail of info * term_cs
-  | TcsIsnil of info * term_cs *)
 
 type command =
   | Eval of info * term_cs

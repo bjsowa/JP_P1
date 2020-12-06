@@ -6,7 +6,7 @@ let ftrue fi =
   TAbs(fi, "t", TAbs(fi, "f", TVar(fi, 1)))
 
 let ffalse fi = 
-  TAbs(fi, "t", TAbs(fi, "f", TVar(fi, 1)))
+  TAbs(fi, "t", TAbs(fi, "f", TVar(fi, 0)))
 
 (* Numerals *)
 
@@ -86,3 +86,34 @@ let snd fi =
 
 let nil fi =
   TApp(fi, TApp(fi, pair fi, ftrue fi), ftrue fi)
+
+let isnil fi = fst fi
+
+let cons fi =
+  TAbs(fi, "h",
+    TAbs(fi, "t",
+      TApp(fi,
+        TApp(fi,
+          pair fi,
+          ffalse fi),
+        TApp(fi,
+          TApp(fi,
+            pair fi,
+            TVar(fi, 1) ),
+          TVar(fi, 0) ) ) ) )
+
+let head fi =
+  TAbs(fi, "z",
+    TApp(fi, 
+      fst fi,
+      TApp(fi,
+        snd fi,
+        TVar(fi, 0) ) ) )
+
+let tail fi =
+  TAbs(fi, "z",
+    TApp(fi, 
+      snd fi,
+      TApp(fi,
+        snd fi,
+        TVar(fi, 0) ) ) )

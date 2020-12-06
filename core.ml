@@ -84,6 +84,10 @@ let tmsInfo t = match t with
   | TcsFst(fi,_) -> fi
   | TcsSnd(fi,_) -> fi
   | TcsNil(fi) -> fi
+  | TcsIsnil(fi,_) -> fi
+  | TcsCons(fi,_,_) -> fi
+  | TcsHead(fi,_) -> fi
+  | TcsTail(fi,_) -> fi
 
 (* --------------------------  PRINTING  ------------------------- *)
 
@@ -147,7 +151,8 @@ let rec bind_free_variables1 ctx_free ctx_bound t = match t with
   | TcsApp(_,t1,t2) 
   | TcsAdd(_,t1,t2)
   | TcsMult(_,t1,t2)
-  | TcsPair(_,t1,t2) -> 
+  | TcsPair(_,t1,t2)
+  | TcsCons(_,t1,t2) -> 
       let ctx_free1 = bind_free_variables1 ctx_free ctx_bound t1 in
       bind_free_variables1 ctx_free1 ctx_bound t2
   | TcsIf(_,t1,t2,t3) ->
@@ -156,7 +161,10 @@ let rec bind_free_variables1 ctx_free ctx_bound t = match t with
       bind_free_variables1 ctx_free1 ctx_bound t3
   | TcsFix(_,t)
   | TcsFst(_,t)
-  | TcsSnd(_,t) ->
+  | TcsSnd(_,t)
+  | TcsIsnil(_,t) 
+  | TcsHead(_,t)
+  | TcsTail(_,t) ->
       bind_free_variables1 ctx_free ctx_bound t
   | _ -> ctx_free
 
@@ -211,6 +219,19 @@ let rec convert_term ctx t = match t with
       TApp(fi, Sugar.snd fi, t)
   | TcsNil(fi) ->
       Sugar.nil fi
+  | TcsIsnil(fi,t) ->
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.isnil fi, t)
+  | TcsCons(fi,t1,t2) ->
+      let t1 = convert_term ctx t1 in
+      let t2 = convert_term ctx t2 in
+      TApp(fi, TApp(fi, Sugar.cons fi, t1), t2)
+  | TcsHead(fi,t) ->
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.head fi, t)
+  | TcsTail(fi,t) ->
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.tail fi, t)
 
 (* -------------------------  EVALUATION  ------------------------ *)
 

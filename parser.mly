@@ -33,6 +33,10 @@ open Core
 %token <Support.Error.info> FST
 %token <Support.Error.info> SND
 %token <Support.Error.info> NIL
+%token <Support.Error.info> ISNIL
+%token <Support.Error.info> CONS
+%token <Support.Error.info> HEAD
+%token <Support.Error.info> TAIL
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -143,3 +147,11 @@ ATerm :
       { TcsSnd($1, $2) }
   | NIL
       { TcsNil($1) }
+  | ISNIL ATerm
+      { TcsIsnil($1, $2) }
+  | CONS ATerm ATerm
+      { TcsCons($1, $2, $3) }
+  | HEAD ATerm
+      { TcsHead($1, $2) }
+  | TAIL ATerm
+      { TcsTail($1, $2) }
