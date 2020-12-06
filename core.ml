@@ -83,7 +83,7 @@ let tmsInfo t = match t with
   | TcsPair(fi,_,_) -> fi
   | TcsFst(fi,_) -> fi
   | TcsSnd(fi,_) -> fi
-
+  | TcsNil(fi) -> fi
 
 (* --------------------------  PRINTING  ------------------------- *)
 
@@ -178,11 +178,7 @@ let rec convert_term ctx t = match t with
       let t2 = convert_term ctx t2 in
       TApp(fi,t1,t2)
   | TcsNum(fi,x) ->
-      let rec church n = (
-        if n == 0 then TVar(fi, 0)
-        else TApp(fi, TVar(fi, 1), church (n-1))
-      ) in
-      TAbs(fi, "s", TAbs(fi, "z", church x))
+      Sugar.num fi x      
   | TcsTrue(fi) ->
       Sugar.ftrue fi
   | TcsFalse(fi) ->
@@ -211,8 +207,10 @@ let rec convert_term ctx t = match t with
       let t = convert_term ctx t in
       TApp(fi, Sugar.fst fi, t)
   | TcsSnd(fi,t) ->
-        let t = convert_term ctx t in
-        TApp(fi, Sugar.snd fi, t)
+      let t = convert_term ctx t in
+      TApp(fi, Sugar.snd fi, t)
+  | TcsNil(fi) ->
+      Sugar.nil fi
 
 (* -------------------------  EVALUATION  ------------------------ *)
 

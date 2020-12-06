@@ -32,6 +32,7 @@ open Core
 %token <Support.Error.info> PAIR
 %token <Support.Error.info> FST
 %token <Support.Error.info> SND
+%token <Support.Error.info> NIL
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -140,3 +141,5 @@ ATerm :
       { TcsFst($1, $2) }
   | SND ATerm
       { TcsSnd($1, $2) }
+  | NIL
+      { TcsNil($1) }

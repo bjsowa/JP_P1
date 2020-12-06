@@ -1,10 +1,21 @@
 open Syntax
 
+(* Booleans *)
+
 let ftrue fi = 
   TAbs(fi, "t", TAbs(fi, "f", TVar(fi, 1)))
 
 let ffalse fi = 
   TAbs(fi, "t", TAbs(fi, "f", TVar(fi, 1)))
+
+(* Numerals *)
+
+let num fi n =
+  let rec church n = (
+    if n == 0 then TVar(fi, 0)
+    else TApp(fi, TVar(fi, 1), church (n-1))
+  ) in
+  TAbs(fi, "s", TAbs(fi, "z", church n))
 
 let add fi = 
   TAbs(fi, "m", 
@@ -35,6 +46,8 @@ let mult fi =
                 TVar(fi, 1) ) ),
             TVar(fi, 0) ) ) ) ) )
 
+(* Y-combinator *)
+
 let fix fi = 
   TAbs(fi, "f",
     TApp(fi,
@@ -51,6 +64,8 @@ let fix fi =
             TVar(fi, 0),
             TVar(fi, 0) ) ) ) ) )
 
+(* Pairs *)
+
 let pair fi =
   TAbs(fi, "f",
     TAbs(fi, "s",
@@ -66,3 +81,8 @@ let fst fi =
 
 let snd fi =
   TAbs(fi, "p", TApp(fi, TVar(fi, 0), ffalse fi))
+
+(* Lists *)
+
+let nil fi =
+  TApp(fi, TApp(fi, pair fi, ftrue fi), ftrue fi)

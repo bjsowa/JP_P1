@@ -53,7 +53,7 @@ let process_command cmd = match cmd with
       let ctx = bind_free_variables emptycontext t in
       let t = convert_term ctx t in
       pr "Evaluating: "; printtm ctx t; force_newline();
-      (* pr "Context: "; List.iter (fun s -> pr s; pr ", ") ctx; force_newline(); *)
+      pr "Context: "; List.iter (fun s -> pr s; pr ", ") ctx; force_newline();
       let t = normalize ctx t in 
       printtm ctx t; force_newline();
   | Equal(_, t1, t2) ->
