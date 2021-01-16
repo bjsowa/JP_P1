@@ -49,8 +49,10 @@ let createID i str =
   with _ ->
     if (String.get str 0) >= 'A' && (String.get str 0) <= 'Z' then
        Parser.UCID {i=i;v=str}
-    else 
+    else if (String.get str 0) >= 'a' && (String.get str 0) <= 'z' then
        Parser.LCID {i=i;v=str}
+    else
+       error i "Unknown word"
 
 let lineno   = ref 1
 and depth    = ref 0
@@ -112,12 +114,6 @@ rule main = parse
 
 | "/*" { depth := 1; startLex := info lexbuf; comment lexbuf; main lexbuf }
 
-| "# " ['0'-'9']+
-    { lineno := extractLineno (text lexbuf) 2 - 1; getFile lexbuf }
-
-| "# line " ['0'-'9']+
-    { lineno := extractLineno (text lexbuf) 7 - 1; getFile lexbuf }
-
 | ['0'-'9']+
     { Parser.INTV{i=info lexbuf; v=int_of_string (text lexbuf)} }
 
@@ -128,15 +124,10 @@ rule main = parse
   ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']*
     { createID (info lexbuf) (text lexbuf) }
 
-| ":=" | "<:" | "<-" | "->" | "=>" | "==>"
-| "{|" | "|}" | "<|" | "|>" | "[|" | "|]" | "=="
+| "&&" | "||"
     { createID (info lexbuf) (text lexbuf) }
 
-| ['~' '%' '\\' '+' '-' '&' '|' ':' '@' '`' '$']+
-    { createID (info lexbuf) (text lexbuf) }
-
-| ['*' '#' '/' '!' '?' '^' '(' ')' '{' '}' '[' ']' '<' '>' '.' ';' '_' ','
-   '=' '\'']
+| ['*' '/' '(' ')' '{' '}' '.' ';' '=' '+' '-' ':']
     { createID (info lexbuf) (text lexbuf) }
 
 | "\"" { resetStr(); startLex := info lexbuf; string lexbuf }

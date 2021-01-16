@@ -9,7 +9,7 @@ open Format
 open Support.Pervasive
 open Support.Error
 open Syntax
-(* open Core *)
+open Core
 
 let searchpath = ref [""]
 let verbose = ref false
@@ -54,18 +54,16 @@ in
   Parsing.clear_parser(); close_in pi; result
 
 let process_command cmd = match cmd with
-  | Eval(_,_t) -> 
-      pr "Evaluating"; force_newline()
+  | Eval(_,t) -> 
+      pr "Evaluating: "; printtm t; pr "\n"
   | TypeOf(_,_t) ->
-      pr "Type Checking"; force_newline()
+      pr "Type Checking\n"
   
 let main () = 
   let inFile = parseArgs() in
   let cmds = parseFile inFile in
   List.iter process_command cmds
 
-let () = set_max_boxes 1000
-let () = set_margin 67
 let res = 
   Printexc.catch (fun () -> 
     try main();0 
