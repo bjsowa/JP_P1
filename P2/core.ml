@@ -10,7 +10,7 @@ let emptycontext = []
 
 let tmInfo t = match t with
     TmVar(fi,_) -> fi
-  | TmAbs(fi,_,_) -> fi
+  | TmAbs(fi,_,_,_) -> fi
   | TmApp(fi,_,_) -> fi 
   | TmNum(fi,_) -> fi
   | TmFix(fi,_) -> fi
@@ -24,36 +24,63 @@ let tmInfo t = match t with
   | TmEq(fi,_,_) -> fi
   | TmAnd(fi,_,_) -> fi
   | TmOr(fi,_,_) -> fi
+  | TmUnit(fi) -> fi
 
 (* --------------------------  PRINTING  ------------------------- *)
 
-let rec printty t = match t with
-  | TyInt -> pr "int"
-  | TyBool -> pr "bool"
-  | TyFunc(t1,t2) -> pr "("; printty t1; pr " -> "; printty t2; pr ")"
-  | TyUnit -> pr "unit"
+let rec printty_Type typ = match typ with
+  | TyFunc(typ1,typ2) -> 
+      printty_AType typ1; pr "->"; printty_Type typ2
+  | _ -> printty_AType typ
 
-let rec printtm_paren t = pr " ("; printtm t; pr ") "
+and printty_AType typ = match typ with
+  | TyInt -> pr "Int"
+  | TyBool -> pr "Bool"
+  | TyUnit -> pr "Unit"
+  | _ -> pr "("; printty_Type typ; pr ")"
 
-and printtm t = match t with
+let printty typ = printty_Type typ
+
+let rec printtm_Term t = match t with
+  | TmIf(_, t1, t2, t3) ->
+      pr "if "; printtm_Term t1;
+      pr "then "; printtm_Term t2;
+      pr "else "; printtm_Term t3;
+  | TmAbs(_,x,typ,t1) ->
+      pr "lambda "; pr x; pr ":"; printty typ; pr "."; printtm_Term t1
+  | TmAdd(_,t1,t2) ->
+      printtm_ATerm t1; pr "+"; printtm_ATerm t2
+  | TmSub(_,t1,t2) ->
+      printtm_ATerm t1; pr "-"; printtm_ATerm t2
+  | TmMult(_,t1,t2) ->
+      printtm_ATerm t1; pr "*"; printtm_ATerm t2
+  | TmDiv(_,t1,t2) ->
+      printtm_ATerm t1; pr "/"; printtm_ATerm t2
+  | TmEq(_,t1,t2) ->
+      printtm_ATerm t1; pr "="; printtm_ATerm t2
+  | TmAnd(_,t1,t2) ->
+      printtm_ATerm t1; pr "&&"; printtm_ATerm t2
+  | TmOr(_,t1,t2) ->
+      printtm_ATerm t1; pr "||"; printtm_ATerm t2
+  | _ -> printtm_AppTerm t
+
+and printtm_AppTerm t = match t with
+  | TmApp(_, t1, t2) ->
+      printtm_AppTerm t1;
+      printtm_ATerm t2
+  | TmFix(_, t1) ->
+      pr "fix "; printtm_ATerm t1
+  | _ -> printtm_ATerm t
+
+and printtm_ATerm t = match t with
   | TmVar(_,x) -> pr x
-  | TmAbs(_,x,t) -> pr "lambda "; pr x; pr "."; printtm t
-  | TmApp(_,t1,t2) -> printtm_paren t1; printtm_paren t2;
-  | TmNum(_,x) -> Format.print_int x
-  | TmFix(_,t) -> pr "fix "; printtm_paren t
   | TmTrue(_) -> pr "true"
   | TmFalse(_) -> pr "false"
-  | TmIf(_,t1,t2,t3) -> 
-      pr "if "; printtm_paren t1;
-      pr "then "; printtm_paren t2;
-      pr "else "; printtm_paren t3
-  | TmAdd(_,t1,t2) -> printtm_paren t1; pr "+"; printtm_paren t2
-  | TmSub(_,t1,t2) -> printtm_paren t1; pr "-"; printtm_paren t2
-  | TmMult(_,t1,t2) -> printtm_paren t1; pr "*"; printtm_paren t2
-  | TmDiv(_,t1,t2) -> printtm_paren t1; pr "/"; printtm_paren t2
-  | TmEq(_,t1,t2) -> printtm_paren t1; pr "="; printtm_paren t2
-  | TmAnd(_,t1,t2) -> printtm_paren t1; pr "&&"; printtm_paren t2
-  | TmOr(_,t1,t2) -> printtm_paren t1; pr "||"; printtm_paren t2
+  | TmNum(_,x) -> Format.print_int x
+  | TmUnit(_) -> pr "unit"
+  | _ -> pr "("; printtm_Term t; pr ")"
+
+let printtm t = printtm_Term t
 
 (* ------------------------  TYPE CHECKING  ----------------------- *)
 
@@ -109,6 +136,8 @@ let rec infer_type ctx t = match t with
         then typ1
         else error fi "Mismatched types: If cases not match"
       else error fi "Mismatched types: If condition is not a boolean"
+  | TmUnit(_) ->
+      TyUnit
   | _ -> TyBool 
 
 and check_type ctx t typ = match t with

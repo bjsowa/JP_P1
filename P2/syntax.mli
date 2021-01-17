@@ -13,7 +13,7 @@ type ty =
 
 type term =
   | TmVar of info * string
-  | TmAbs of info * string * term
+  | TmAbs of info * string * ty * term
   | TmApp of info * term * term
   | TmNum of info * int
   | TmFix of info * term
@@ -27,6 +27,7 @@ type term =
   | TmEq of info * term * term
   | TmAnd of info * term * term
   | TmOr of info * term * term
+  | TmUnit of info
 
 type command =
   | Eval of info * term

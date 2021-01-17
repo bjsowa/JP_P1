@@ -9,27 +9,19 @@ open Syntax
 open Core
 %}
 
-/* ---------------------------------------------------------------------- */
-/* Preliminaries */
-
-/* We first list all the tokens mentioned in the parsing rules
-   below.  The names of the tokens are common to the parser and the
-   generated lexical analyzer.  Each token is annotated with the type
-   of data that it carries; normally, this is just file information
-   (which is used by the parser to annotate the abstract syntax trees
-   that it constructs), but sometimes -- in the case of identifiers and
-   constant values -- more information is provided.
- */
-
 /* Keyword tokens */
-%token <Support.Error.info> LAMBDA
-%token <Support.Error.info> TRUE
-%token <Support.Error.info> FALSE
-%token <Support.Error.info> IF
-%token <Support.Error.info> THEN
+%token <Support.Error.info> BBOOL
 %token <Support.Error.info> ELSE
+%token <Support.Error.info> FALSE
 %token <Support.Error.info> FIX
+%token <Support.Error.info> IF
+%token <Support.Error.info> IINT
+%token <Support.Error.info> LAMBDA
+%token <Support.Error.info> THEN
+%token <Support.Error.info> TRUE
 %token <Support.Error.info> TYPEOF
+%token <Support.Error.info> UNIT
+%token <Support.Error.info> UUNIT
 
 /* Identifier and constant value tokens */
 %token <string Support.Error.withinfo> UCID  /* uppercase-initial */
@@ -40,6 +32,7 @@ open Core
 
 /* Symbolic tokens */
 %token <Support.Error.info> AMPAMP
+%token <Support.Error.info> ARROW
 %token <Support.Error.info> COLON
 %token <Support.Error.info> DOT
 %token <Support.Error.info> DASH
@@ -55,14 +48,17 @@ open Core
 %token <Support.Error.info> STAR
 %token <Support.Error.info> VBARVBAR
 
+%start toplevel
+%type < Syntax.command list > toplevel
+
+%nonassoc ELSE THEN DOT
+
 %left VBARVBAR
 %left AMPAMP
 %left EQ
-%left PLUS SUB
+%left PLUS DASH
 %left STAR SLASH
 
-%start toplevel
-%type < Syntax.command list > toplevel
 %%
 
 /* ---------------------------------------------------------------------- */
@@ -86,16 +82,33 @@ Command :
 Term :
     AppTerm
       { $1 }
-  | LAMBDA LCID DOT Term 
-      { TmAbs($1, $2.v, $4) }
+  | LAMBDA LCID COLON Type DOT Term 
+      { TmAbs($1, $2.v, $4, $6) }
+  | IF Term THEN Term ELSE Term
+      { TmIf($1, $2, $4, $6) }
+  | Term PLUS Term
+      { TmAdd($2, $1, $3) }
+  | Term DASH Term
+      { TmSub($2, $1, $3) }
+  | Term STAR Term
+      { TmMult($2, $1, $3) }
+  | Term SLASH Term
+      { TmDiv($2, $1, $3) }
+  | Term AMPAMP Term
+      { TmAnd($2, $1, $3) }
+  | Term VBARVBAR Term
+      { TmOr($2, $1, $3) }
+  | Term EQ Term
+      { TmEq($2, $1, $3) }
 
 AppTerm :
     ATerm
       { $1 }
   | AppTerm ATerm
       { TmApp(tmInfo $1, $1, $2) }
+  | FIX ATerm
+      { TmFix($1, $2) }
 
-/* Atomic terms are ones that never require extra parentheses */
 ATerm :
     LPAREN Term RPAREN  
       { $2 } 
@@ -107,19 +120,21 @@ ATerm :
       { TmFalse($1) }
   | INTV
       { TmNum($1.i, $1.v) }
-  | IF ATerm THEN ATerm ELSE ATerm
-      { TmIf($1, $2, $4, $6) }
-  | ATerm PLUS ATerm
-      { TmAdd($2, $1, $3) }
-  | ATerm DASH ATerm
-      { TmSub($2, $1, $3) }
-  | ATerm STAR ATerm
-      { TmMult($2, $1, $3) }
-  | ATerm SLASH ATerm
-      { TmDiv($2, $1, $3) }
-  | FIX ATerm
-      { TmFix($1, $2) }
-  | ATerm AMPAMP ATerm
-      { TmAnd($2, $1, $3) }
-  | ATerm VBARVBAR ATerm
-      { TmOr($2, $1, $3) }
+  | UNIT
+      { TmUnit($1) }
+
+Type :
+    AType ARROW Type
+      { TyFunc($1, $3) }
+  | AType
+      { $1 }
+
+AType :
+    LPAREN Type RPAREN  
+      { $2 } 
+  | BBOOL
+      { TyBool }
+  | IINT
+      { TyInt }
+  | UUNIT
+      { TyUnit }
