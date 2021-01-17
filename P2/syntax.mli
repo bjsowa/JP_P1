@@ -48,6 +48,7 @@ type simple_context =
   | LLet of string * term
   | LApp of term
   | RApp of value
+  | LFixApp of value 
   | CFix
   | CIf of term * term
   | LAdd of term

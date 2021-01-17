@@ -378,10 +378,12 @@ and eval_kontinuation exs env ctx v =
           let env2 = (x, v) :: env1 in
           eval_control exs env2 ctx1 t1
       | VFix f ->
-          let env1, x, t1 = vfunc_unpack f in
-          (* let env2 = (x, v1) :: env1 in *)
-          eval_kontinuation exs env1 (RApp f :: RApp :: ctx1) v
+          eval_kontinuation exs env (LFixApp v1 :: LFixApp v :: ctx1) f
       | _ -> err "The left side of application is not a function or fix" )
+  | LFixApp v1 :: ctx1 ->
+      let env1, x, t1 = vfunc_unpack v in
+      let env2 = (x, v1) :: env1 in
+      eval_control exs env2 ctx1 t1
   | CFix :: ctx1 -> eval_kontinuation exs env ctx1 (VFix v)
   | CIf (t1, t2) :: ctx1 ->
       if vbool_unpack v then eval_control exs env ctx1 t1
