@@ -249,11 +249,11 @@ let rec infer_type ctx t =
           | fi1, x1, x2, t2 ->
               let typ1 = lookup_exception fi1 ctx x1 in
               let ctx1 = add_variable_binding ctx x2 typ1 in
-              if check_type ctx1 t2 typ then ()
-              else
+              if not (check_type ctx1 t2 typ) then
                 error fi1
                   "Mismatched types: Catch clause type does not match the try \
-                   block type")
+                   block type"
+              else ())
         c;
       typ
 

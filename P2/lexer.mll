@@ -49,6 +49,7 @@ let reservedWords = [
   ("-", fun i -> Parser.DASH i);
   ("->", fun i -> Parser.ARROW i);
   ("=>", fun i -> Parser.AARROW i);
+  ("_", fun i -> Parser.USCORE i);
 ]
 
 (* Support functions *)
@@ -139,7 +140,7 @@ rule main = parse
     { createID (info lexbuf) (text lexbuf) }
 
 | "&&" | "||" | "->" | "=>"
-| ['*' '/' '(' ')' '{' '}' '.' ';' '=' '+' '-' ':']
+| ['*' '/' '(' ')' '{' '}' '.' ';' '=' '+' '-' ':' '_']
     { createID (info lexbuf) (text lexbuf) }
 
 | "\"" { resetStr(); startLex := info lexbuf; string lexbuf }

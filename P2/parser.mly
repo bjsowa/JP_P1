@@ -55,6 +55,7 @@ open Core
 %token <Support.Error.info> SEMI
 %token <Support.Error.info> SLASH
 %token <Support.Error.info> STAR
+%token <Support.Error.info> USCORE
 %token <Support.Error.info> VBARVBAR
 
 %start toplevel
@@ -93,10 +94,14 @@ Term :
       { $1 }
   | LAMBDA LCID COLON Type DOT Term 
       { TmAbs($1, $2.v, $4, $6) }
+  | LAMBDA USCORE COLON Type DOT Term 
+      { TmAbs($1, "_", $4, $6) }
   | IF Term THEN Term ELSE Term
       { TmIf($1, $2, $4, $6) }
   | LET LCID EQ Term IN Term
       { TmLet($1, $2.v, $4, $6) }
+  | LET USCORE EQ Term IN Term
+      { TmLet($1, "_", $4, $6) }
   | Term PLUS Term
       { TmAdd($2, $1, $3) }
   | Term DASH Term
@@ -127,6 +132,8 @@ CatchClauseList :
 CatchClause :
     LCURLY LCID LCID AARROW Term RCURLY
       { ($1, $2.v, $3.v, $5) }
+  | LCURLY LCID USCORE AARROW Term RCURLY
+      { ($1, $2.v, "_", $5) }
 
 AppTerm :
     ATerm
