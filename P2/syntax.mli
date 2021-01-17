@@ -40,6 +40,7 @@ type value =
   | VBool of bool
   | VUnit
   | VFunc of (environment * string * term)
+  | VFix of value
 
 and environment = (string * value) list
 
@@ -47,7 +48,7 @@ type simple_context =
   | LLet of string * term
   | LApp of term
   | RApp of value
-  (* | CFix *)
+  | CFix
   | CIf of term * term
   | LAdd of term
   | RAdd of value

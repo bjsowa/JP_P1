@@ -211,12 +211,15 @@ and printtm_ATerm t =
 
 let printtm t = printtm_Term t
 
-let printv v =
+let rec printv v =
   match v with
   | VInt v1 -> Format.print_int v1
   | VBool v1 -> Format.print_bool v1
   | VUnit -> pr "unit"
   | VFunc (_env, _b, t) -> printtm t
+  | VFix v1 ->
+      pr "fix ";
+      printv v1
 
 (* ------------------------  TYPE CHECKING  ----------------------- *)
 
@@ -339,6 +342,7 @@ let rec eval_control exs env ctx t =
   | TmAbs (_, x, _, t1) -> eval_kontinuation exs env ctx (VFunc (env, x, t1))
   | TmLet (_, x, t1, t2) -> eval_control exs env (LLet (x, t2) :: ctx) t1
   | TmApp (_, t1, t2) -> eval_control exs env (LApp t2 :: ctx) t1
+  | TmFix (_, t1) -> eval_control exs env (CFix :: ctx) t1
   | TmNum (_, x) -> eval_kontinuation exs env ctx (VInt x)
   | TmTrue _ -> eval_kontinuation exs env ctx (VBool true)
   | TmFalse _ -> eval_kontinuation exs env ctx (VBool false)
@@ -359,7 +363,6 @@ let rec eval_control exs env ctx t =
       let tc = lookup_exception fi exs x in
       eval_control exs env (LThrow tc :: ctx) t
   | TmUnit _ -> eval_kontinuation exs env ctx VUnit
-  | _ -> VUnit
 
 and eval_kontinuation exs env ctx v =
   match ctx with
@@ -368,10 +371,18 @@ and eval_kontinuation exs env ctx v =
       let env1 = (x, v) :: env in
       eval_control exs env1 ctx1 t
   | LApp t :: ctx1 -> eval_control exs env (RApp v :: ctx1) t
-  | RApp v1 :: ctx1 ->
-      let env1, x, t1 = vfunc_unpack v1 in
-      let env2 = (x, v) :: env1 in
-      eval_control exs env2 ctx1 t1
+  | RApp v1 :: ctx1 -> (
+      match v1 with
+      | VFunc f ->
+          let env1, x, t1 = f in
+          let env2 = (x, v) :: env1 in
+          eval_control exs env2 ctx1 t1
+      | VFix f ->
+          let env1, x, t1 = vfunc_unpack f in
+          (* let env2 = (x, v1) :: env1 in *)
+          eval_kontinuation exs env1 (RApp f :: RApp :: ctx1) v
+      | _ -> err "The left side of application is not a function or fix" )
+  | CFix :: ctx1 -> eval_kontinuation exs env ctx1 (VFix v)
   | CIf (t1, t2) :: ctx1 ->
       if vbool_unpack v then eval_control exs env ctx1 t1
       else eval_control exs env ctx1 t2
