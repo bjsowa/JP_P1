@@ -305,7 +305,12 @@ let rec eval_control t ctx =
   | TmFalse _ -> eval_kontinuation (VBool false) ctx
   | TmIf (_, t1, t2, t3) -> eval_control t1 (CIf (t2, t3) :: ctx)
   | TmAdd (_, t1, t2) -> eval_control t1 (LAdd t2 :: ctx)
+  | TmSub (_, t1, t2) -> eval_control t1 (LSub t2 :: ctx)
+  | TmMult (_, t1, t2) -> eval_control t1 (LMult t2 :: ctx)
+  | TmDiv (_, t1, t2) -> eval_control t1 (LDiv t2 :: ctx)
   | TmEq (_, t1, t2) -> eval_control t1 (LEq t2 :: ctx)
+  | TmAnd (_, t1, t2) -> eval_control t1 (LAnd t2 :: ctx)
+  | TmOr (_, t1, t2) -> eval_control t1 (LOr t2 :: ctx)
   | _ -> VUnit
 
 and eval_kontinuation v ctx =
@@ -315,10 +320,25 @@ and eval_kontinuation v ctx =
       if vbool_unpack v then eval_control t1 ctx1 else eval_control t2 ctx1
   | LAdd t :: ctx1 -> eval_control t (RAdd v :: ctx1)
   | RAdd v1 :: ctx1 ->
-      eval_kontinuation (VInt (vint_unpack v + vint_unpack v1)) ctx1
+      eval_kontinuation (VInt (vint_unpack v1 + vint_unpack v)) ctx1
+  | LSub t :: ctx1 -> eval_control t (RSub v :: ctx1)
+  | RSub v1 :: ctx1 ->
+      eval_kontinuation (VInt (vint_unpack v1 - vint_unpack v)) ctx1
+  | LMult t :: ctx1 -> eval_control t (RMult v :: ctx1)
+  | RMult v1 :: ctx1 ->
+      eval_kontinuation (VInt (vint_unpack v1 * vint_unpack v)) ctx1
+  | LDiv t :: ctx1 -> eval_control t (RDiv v :: ctx1)
+  | RDiv v1 :: ctx1 ->
+      eval_kontinuation (VInt (vint_unpack v1 / vint_unpack v)) ctx1
   | LEq t :: ctx1 -> eval_control t (REq v :: ctx1)
   | REq v1 :: ctx1 ->
-      eval_kontinuation (VBool (vint_unpack v == vint_unpack v1)) ctx1
+      eval_kontinuation (VBool (vint_unpack v1 == vint_unpack v)) ctx1
+  | LAnd t :: ctx1 -> eval_control t (RAnd v :: ctx1)
+  | RAnd v1 :: ctx1 ->
+      eval_kontinuation (VBool (vbool_unpack v1 && vbool_unpack v)) ctx1
+  | LOr t :: ctx1 -> eval_control t (ROr v :: ctx1)
+  | ROr v1 :: ctx1 ->
+      eval_kontinuation (VBool (vbool_unpack v1 || vbool_unpack v)) ctx1
   | _ -> VUnit
 
 let eval t = eval_control t []
