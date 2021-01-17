@@ -56,8 +56,10 @@ in
 let process_command cmd = match cmd with
   | Eval(_,t) -> 
       pr "Evaluating: "; printtm t; pr "\n"
-  | TypeOf(_,_t) ->
-      pr "Type Checking\n"
+  | TypeOf(_,t) ->
+      pr "Type Checking: "; printtm t; pr "\n";
+      let typ = infer_type [] t in
+      printty typ; pr "\n"
   
 let main () = 
   let inFile = parseArgs() in
