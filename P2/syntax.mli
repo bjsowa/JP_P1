@@ -5,11 +5,7 @@
 
 open Support.Error
 
-type ty =
-  | TyInt
-  | TyBool
-  | TyFunc of ty * ty 
-  | TyUnit
+type ty = TyInt | TyBool | TyFunc of ty * ty | TyUnit
 
 type term =
   | TmVar of info * string
@@ -29,8 +25,6 @@ type term =
   | TmOr of info * term * term
   | TmUnit of info
 
-type command =
-  | Eval of info * term
-  | TypeOf of info * term
+type command = Eval of info * term | TypeOf of info * term
 
 type context = (string * ty) list
