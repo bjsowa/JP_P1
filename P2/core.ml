@@ -267,6 +267,13 @@ and check_type ctx t typ =
           let ctx1 = add_variable_binding ctx x typ1 in
           check_type ctx1 t1 ftyp2
       | _ -> false )
+  | TmLet (_, x, t1, t2) ->
+      let typ1 = infer_type ctx t1 in
+      let ctx1 = add_variable_binding ctx x typ1 in
+      check_type ctx1 t2 typ
+  | TmException (_, x, typ, t2) ->
+      let ctx1 = add_exception_binding ctx x typ in
+      check_type ctx1 t2 typ
   | TmApp (_, t1, t2) ->
       let typ1 = infer_type ctx t2 in
       check_type ctx t1 (TyFunc (typ1, typ))
