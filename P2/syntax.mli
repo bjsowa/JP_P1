@@ -49,6 +49,7 @@ type simple_context =
   | LApp of term
   | RApp of value
   | LFixApp of value 
+  | REnv of environment
   | CFix
   | CIf of term * term
   | LAdd of term

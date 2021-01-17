@@ -57,22 +57,30 @@ let parseFile inFile =
   result
 
 let process_command cmd =
-  match cmd with
-  | Eval (_, t) ->
-      pr "Evaluating: ";
-      printtm t;
-      pr "\n";
-      let _ = infer_type emptycontext t in
-      let v = eval t in
-      printv v;
-      pr "\n"
-  | TypeOf (_, t) ->
-      pr "Type Checking: ";
-      printtm t;
-      pr "\n";
-      let typ = infer_type emptycontext t in
-      printty typ;
-      pr "\n"
+  try
+    match cmd with
+    | Eval (_, t) ->
+        if !verbose then (
+          pr "Evaluating: ";
+          printtm t;
+          pr "\n" );
+        let typ = infer_type emptycontext t in
+        if !verbose then (
+          pr "Inferred type: ";
+          printty typ;
+          pr "\n" );
+        let v = eval t in
+        printv v;
+        pr "\n"
+    | TypeOf (_, t) ->
+        if !verbose then (
+          pr "Type Checking: ";
+          printtm t;
+          pr "\n" );
+        let typ = infer_type emptycontext t in
+        printty typ;
+        pr "\n"
+  with Exit _ -> ()
 
 let main () =
   let inFile = parseArgs () in

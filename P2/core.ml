@@ -221,6 +221,8 @@ let rec printv v =
       pr "fix ";
       printv v1
 
+
+
 (* ------------------------  TYPE CHECKING  ----------------------- *)
 
 let rec infer_type ctx t =
@@ -331,8 +333,6 @@ let vfunc_unpack v =
   | VFunc f -> f
   | _ -> err "Cannot unpack function. Expected VFunc."
 
-(* let term_subst  *)
-
 let rec eval_control exs env ctx t =
   (* printtm t; pr "\n"; *)
   match t with
@@ -376,14 +376,16 @@ and eval_kontinuation exs env ctx v =
       | VFunc f ->
           let env1, x, t1 = f in
           let env2 = (x, v) :: env1 in
-          eval_control exs env2 ctx1 t1
+          eval_control exs env2 (REnv env :: ctx1) t1
       | VFix f ->
-          eval_kontinuation exs env (LFixApp v1 :: LFixApp v :: ctx1) f
-      | _ -> err "The left side of application is not a function or fix" )
+          eval_kontinuation exs env (RApp f :: LFixApp v :: ctx1) v1
+      | _ -> err "The left side of application is not a function or fix operator" )
   | LFixApp v1 :: ctx1 ->
       let env1, x, t1 = vfunc_unpack v in
       let env2 = (x, v1) :: env1 in
-      eval_control exs env2 ctx1 t1
+      eval_control exs env2 (REnv env :: ctx1) t1
+  | REnv env1 :: ctx1 ->
+      eval_kontinuation exs env1 ctx1 v
   | CFix :: ctx1 -> eval_kontinuation exs env ctx1 (VFix v)
   | CIf (t1, t2) :: ctx1 ->
       if vbool_unpack v then eval_control exs env ctx1 t1

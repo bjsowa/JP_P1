@@ -15,3 +15,9 @@ fix (lambda f : Int -> Int. lambda n : Int. if n=0 then 1 else (n * (f (n-1)))) 
 fix (lambda f : Int -> Int. lambda n : Int. if n=0 then 1 else (n * (f (n-1)))) 2;
 fix (lambda f : Int -> Int. lambda n : Int. if n=0 then 1 else (n * (f (n-1)))) 3;
 fix (lambda f : Int -> Int. lambda n : Int. if n=0 then 1 else (n * (f (n-1)))) 10;
+
+let silnia = fix (lambda f : Int -> Int. lambda n : Int. if n=0 then 1 else (n * (f (n-1)))) in
+silnia 5 + silnia 6;
+
+let add = lambda x : Int . lambda y : Int . x + y in
+add 5 3 + add 10 53;
