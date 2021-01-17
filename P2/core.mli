@@ -6,18 +6,22 @@
 open Syntax
 open Support.Error
 
-(* Context management *)
+(* Context and environment management *)
 val emptycontext : context
 
-val lookup : binding list -> string -> ty
+val lookup_binding : binding list -> string -> ty
 
-val lookup_variable : info -> context -> string -> ty
+val lookup_variable_type : info -> context -> string -> ty
+
+val lookup_exception_type : info -> context -> string -> ty
+
+val lookup_value : info -> environment -> string -> value
 
 val add_binding : binding list -> string -> ty -> binding list
 
 val add_variable_binding : context -> string -> ty -> context
 
-(* val add_exception_binding : context -> string -> ty -> context *)
+val add_exception_binding : context -> string -> ty -> context
 
 (* Extracting file info *)
 val tmInfo : term -> info
@@ -35,8 +39,8 @@ val infer_type : context -> term -> ty
 val check_type : context -> term -> ty -> bool
 
 (* Evaluation *)
-val eval_control : term -> eval_context -> value
+val eval_control : environment -> eval_context -> term -> value
 
-val eval_kontinuation : value -> eval_context -> value
+val eval_kontinuation : environment -> eval_context -> value -> value
 
 val eval : term -> value

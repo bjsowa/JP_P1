@@ -14,22 +14,32 @@ let add_variable_binding ctx x typ =
 let add_exception_binding ctx x typ =
   { ctx with exceptions = add_binding ctx.exceptions x typ }
 
-let lookup bindings x = List.assoc x bindings
+let lookup_binding bindings x = List.assoc x bindings
 
-let lookup_variable fi ctx x =
-  try lookup ctx.variables x
-  with Not_found ->
-    let msg =
-      Printf.sprintf "Variable lookup failure: Variable %s not found in context"
-    in
-    error fi (msg x)
-
-let lookup_exception fi ctx x =
-  try lookup ctx.exceptions x
+let lookup_variable_type fi ctx x =
+  try lookup_binding ctx.variables x
   with Not_found ->
     let msg =
       Printf.sprintf
-        "Exception lookup failure: Exception %s not found in context"
+        "Variable type lookup failure: Variable %s not found in context"
+    in
+    error fi (msg x)
+
+let lookup_exception_type fi ctx x =
+  try lookup_binding ctx.exceptions x
+  with Not_found ->
+    let msg =
+      Printf.sprintf
+        "Exception type lookup failure: Exception %s not found in context"
+    in
+    error fi (msg x)
+
+let lookup_value fi env x =
+  try List.assoc x env
+  with Not_found ->
+    let msg =
+      Printf.sprintf
+        "Value lookup failure: Variable %s not found in environment"
     in
     error fi (msg x)
 
@@ -197,7 +207,7 @@ let printv v =
 
 let rec infer_type ctx t =
   match t with
-  | TmVar (fi, x) -> lookup_variable fi ctx x
+  | TmVar (fi, x) -> lookup_variable_type fi ctx x
   | TmAbs (_, x, typ, t1) ->
       let ctx1 = add_variable_binding ctx x typ in
       let typ1 = infer_type ctx1 t1 in
@@ -245,7 +255,7 @@ let rec infer_type ctx t =
       let ctx1 = add_exception_binding ctx x typ in
       infer_type ctx1 t1
   | TmThrow (fi, x, t1, typ) ->
-      let typ1 = lookup_exception fi ctx x in
+      let typ1 = lookup_exception_type fi ctx x in
       if check_type ctx t1 typ1 then typ
       else error fi "Mismatched types: Wrong exception type"
   | TmTry (_, t1, c) ->
@@ -253,7 +263,7 @@ let rec infer_type ctx t =
       List.iter
         (function
           | fi1, x1, x2, t2 ->
-              let typ1 = lookup_exception fi1 ctx x1 in
+              let typ1 = lookup_exception_type fi1 ctx x1 in
               let ctx1 = add_variable_binding ctx x2 typ1 in
               if not (check_type ctx1 t2 typ) then
                 error fi1
@@ -298,47 +308,65 @@ let vint_unpack v =
 let vbool_unpack v =
   match v with VBool v1 -> v1 | _ -> err "Cannot unpack bool. Expected VBool."
 
-let rec eval_control t ctx =
+let vfunc_unpack v =
+  match v with
+  | VFunc f -> f
+  | _ -> err "Cannot unpack function. Expected VFunc."
+
+(* let term_subst  *)
+
+let rec eval_control env ctx t =
   match t with
-  | TmNum (_, x) -> eval_kontinuation (VInt x) ctx
-  | TmTrue _ -> eval_kontinuation (VBool true) ctx
-  | TmFalse _ -> eval_kontinuation (VBool false) ctx
-  | TmIf (_, t1, t2, t3) -> eval_control t1 (CIf (t2, t3) :: ctx)
-  | TmAdd (_, t1, t2) -> eval_control t1 (LAdd t2 :: ctx)
-  | TmSub (_, t1, t2) -> eval_control t1 (LSub t2 :: ctx)
-  | TmMult (_, t1, t2) -> eval_control t1 (LMult t2 :: ctx)
-  | TmDiv (_, t1, t2) -> eval_control t1 (LDiv t2 :: ctx)
-  | TmEq (_, t1, t2) -> eval_control t1 (LEq t2 :: ctx)
-  | TmAnd (_, t1, t2) -> eval_control t1 (LAnd t2 :: ctx)
-  | TmOr (_, t1, t2) -> eval_control t1 (LOr t2 :: ctx)
+  | TmVar (fi, x) ->
+      let v1 = lookup_value fi env x in
+      eval_kontinuation env ctx v1
+  | TmAbs (_, x, _, t1) -> eval_kontinuation env ctx (VFunc (env, x, t1))
+  | TmApp (_, t1, t2) -> eval_control env (LApp t2 :: ctx) t1
+  | TmNum (_, x) -> eval_kontinuation env ctx (VInt x)
+  | TmTrue _ -> eval_kontinuation env ctx (VBool true)
+  | TmFalse _ -> eval_kontinuation env ctx (VBool false)
+  | TmIf (_, t1, t2, t3) -> eval_control env (CIf (t2, t3) :: ctx) t1
+  | TmAdd (_, t1, t2) -> eval_control env (LAdd t2 :: ctx) t1
+  | TmSub (_, t1, t2) -> eval_control env (LSub t2 :: ctx) t1
+  | TmMult (_, t1, t2) -> eval_control env (LMult t2 :: ctx) t1
+  | TmDiv (_, t1, t2) -> eval_control env (LDiv t2 :: ctx) t1
+  | TmEq (_, t1, t2) -> eval_control env (LEq t2 :: ctx) t1
+  | TmAnd (_, t1, t2) -> eval_control env (LAnd t2 :: ctx) t1
+  | TmOr (_, t1, t2) -> eval_control env (LOr t2 :: ctx) t1
   | _ -> VUnit
 
-and eval_kontinuation v ctx =
+and eval_kontinuation env ctx v =
   match ctx with
   | [] -> v
+  | LApp t :: ctx1 -> eval_control env (RApp v :: ctx1) t
+  | RApp v1 :: ctx1 ->
+      let env1, x, t1 = vfunc_unpack v1 in
+      let env2 = (x, v) :: env1 in
+      eval_control env2 ctx1 t1
   | CIf (t1, t2) :: ctx1 ->
-      if vbool_unpack v then eval_control t1 ctx1 else eval_control t2 ctx1
-  | LAdd t :: ctx1 -> eval_control t (RAdd v :: ctx1)
+      if vbool_unpack v then eval_control env ctx1 t1
+      else eval_control env ctx1 t2
+  | LAdd t :: ctx1 -> eval_control env (RAdd v :: ctx1) t
   | RAdd v1 :: ctx1 ->
-      eval_kontinuation (VInt (vint_unpack v1 + vint_unpack v)) ctx1
-  | LSub t :: ctx1 -> eval_control t (RSub v :: ctx1)
+      eval_kontinuation env ctx1 (VInt (vint_unpack v1 + vint_unpack v))
+  | LSub t :: ctx1 -> eval_control env (RSub v :: ctx1) t
   | RSub v1 :: ctx1 ->
-      eval_kontinuation (VInt (vint_unpack v1 - vint_unpack v)) ctx1
-  | LMult t :: ctx1 -> eval_control t (RMult v :: ctx1)
+      eval_kontinuation env ctx1 (VInt (vint_unpack v1 - vint_unpack v))
+  | LMult t :: ctx1 -> eval_control env (RMult v :: ctx1) t
   | RMult v1 :: ctx1 ->
-      eval_kontinuation (VInt (vint_unpack v1 * vint_unpack v)) ctx1
-  | LDiv t :: ctx1 -> eval_control t (RDiv v :: ctx1)
+      eval_kontinuation env ctx1 (VInt (vint_unpack v1 * vint_unpack v))
+  | LDiv t :: ctx1 -> eval_control env (RDiv v :: ctx1) t
   | RDiv v1 :: ctx1 ->
-      eval_kontinuation (VInt (vint_unpack v1 / vint_unpack v)) ctx1
-  | LEq t :: ctx1 -> eval_control t (REq v :: ctx1)
+      eval_kontinuation env ctx1 (VInt (vint_unpack v1 / vint_unpack v))
+  | LEq t :: ctx1 -> eval_control env (REq v :: ctx1) t
   | REq v1 :: ctx1 ->
-      eval_kontinuation (VBool (vint_unpack v1 == vint_unpack v)) ctx1
-  | LAnd t :: ctx1 -> eval_control t (RAnd v :: ctx1)
+      eval_kontinuation env ctx1 (VBool (vint_unpack v1 == vint_unpack v))
+  | LAnd t :: ctx1 -> eval_control env (RAnd v :: ctx1) t
   | RAnd v1 :: ctx1 ->
-      eval_kontinuation (VBool (vbool_unpack v1 && vbool_unpack v)) ctx1
-  | LOr t :: ctx1 -> eval_control t (ROr v :: ctx1)
+      eval_kontinuation env ctx1 (VBool (vbool_unpack v1 && vbool_unpack v))
+  | LOr t :: ctx1 -> eval_control env (ROr v :: ctx1) t
   | ROr v1 :: ctx1 ->
-      eval_kontinuation (VBool (vbool_unpack v1 || vbool_unpack v)) ctx1
+      eval_kontinuation env ctx1 (VBool (vbool_unpack v1 || vbool_unpack v))
   | _ -> VUnit
 
-let eval t = eval_control t []
+let eval t = eval_control [] [] t

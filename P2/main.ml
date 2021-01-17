@@ -63,7 +63,7 @@ let process_command cmd =
       printtm t;
       pr "\n";
       let _ = infer_type emptycontext t in
-      let v = eval_control t [] in
+      let v = eval t in
       printv v;
       pr "\n"
   | TypeOf (_, t) ->

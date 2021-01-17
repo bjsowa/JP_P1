@@ -35,7 +35,13 @@ type binding = string * ty
 
 type context = { variables : binding list; exceptions : binding list }
 
-type value = VInt of int | VBool of bool | VUnit | VFunc of (value -> value)
+type value =
+  | VInt of int
+  | VBool of bool
+  | VUnit
+  | VFunc of (environment * string * term)
+
+and environment = (string * value) list
 
 type simple_context =
   | LLet of term
