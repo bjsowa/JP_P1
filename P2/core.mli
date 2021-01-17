@@ -8,6 +8,8 @@ open Support.Error
 
 (* Context management *)
 val emptycontext : context 
+val lookup: info -> context -> string -> ty
+val addbinding: context -> string -> ty -> context
 
 (* Extracting file info *)
 val tmInfo: term -> info
@@ -17,6 +19,5 @@ val printty: ty -> unit
 val printtm: term -> unit
 
 (* Type checking *)
-val lookup: context -> string -> ty
 val infer_type: context -> term -> ty
 val check_type: context -> term -> ty -> bool

@@ -6,6 +6,15 @@ open Support.Error
 
 let emptycontext = []
 
+let addbinding ctx x typ = (x,typ)::ctx
+
+let lookup fi ctx x = 
+  try
+    List.assoc x ctx
+  with Not_found ->
+    let msg = Printf.sprintf "Variable lookup failure: Variable %s not found in context" in
+    error fi (msg x)
+
 (* --------------------  EXTRACTING FILE INFO  ------------------- *)
 
 let tmInfo t = match t with
@@ -84,12 +93,12 @@ let printtm t = printtm_Term t
 
 (* ------------------------  TYPE CHECKING  ----------------------- *)
 
-let lookup ctx x = 
-  List.assoc x ctx
-
 let rec infer_type ctx t = match t with
-  | TmVar(_,x) -> lookup ctx x
-  (* | TmAbs(_,x,t1) ->  *)
+  | TmVar(fi,x) -> lookup fi ctx x
+  | TmAbs(_,x,typ,t1) -> 
+      let ctx1 = addbinding ctx x typ in
+      let typ1 = infer_type ctx1 t1 in
+      TyFunc(typ,typ1)
   | TmApp(fi,t1,t2) ->
       let typ = infer_type ctx t1 in (
         match typ with 
@@ -138,9 +147,16 @@ let rec infer_type ctx t = match t with
       else error fi "Mismatched types: If condition is not a boolean"
   | TmUnit(_) ->
       TyUnit
-  | _ -> TyBool 
 
 and check_type ctx t typ = match t with
+  | TmAbs(_,x,typ1,t1) -> (
+      match typ with 
+        | TyFunc(ftyp1, ftyp2) ->
+            typ1 == ftyp1 &&
+            let ctx1 = addbinding ctx x typ1 in
+            check_type ctx1 t1 ftyp2
+        | _ -> false
+    )
   | TmApp(_,t1,t2) ->
       let typ1 = infer_type ctx t2 in
       check_type ctx t1 (TyFunc(typ1, typ))
