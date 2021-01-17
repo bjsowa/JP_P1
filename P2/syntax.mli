@@ -10,6 +10,7 @@ type ty = TyInt | TyBool | TyFunc of ty * ty | TyUnit
 type term =
   | TmVar of info * string
   | TmAbs of info * string * ty * term
+  | TmLet of info * string * term * term
   | TmApp of info * term * term
   | TmNum of info * int
   | TmFix of info * term
@@ -24,7 +25,12 @@ type term =
   | TmAnd of info * term * term
   | TmOr of info * term * term
   | TmUnit of info
+  | TmException of info * string * ty * term
+  | TmThrow of info * string * term * ty
+  | TmTry of info * term * (info * string * string * term) list 
 
 type command = Eval of info * term | TypeOf of info * term
 
-type context = (string * ty) list
+type binding = string * ty
+
+type context = { variables : binding list; exceptions : binding list }

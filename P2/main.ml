@@ -66,7 +66,7 @@ let process_command cmd =
       pr "Type Checking: ";
       printtm t;
       pr "\n";
-      let typ = infer_type [] t in
+      let typ = infer_type emptycontext t in
       printty typ;
       pr "\n"
 

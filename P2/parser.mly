@@ -10,14 +10,23 @@ open Core
 %}
 
 /* Keyword tokens */
+%token <Support.Error.info> AARROW
+%token <Support.Error.info> AS
 %token <Support.Error.info> BBOOL
+%token <Support.Error.info> CATCH
 %token <Support.Error.info> ELSE
+%token <Support.Error.info> EXCEPTION
 %token <Support.Error.info> FALSE
 %token <Support.Error.info> FIX
 %token <Support.Error.info> IF
+%token <Support.Error.info> IN
 %token <Support.Error.info> IINT
 %token <Support.Error.info> LAMBDA
+%token <Support.Error.info> LET
+%token <Support.Error.info> OF
 %token <Support.Error.info> THEN
+%token <Support.Error.info> THROW
+%token <Support.Error.info> TRY
 %token <Support.Error.info> TRUE
 %token <Support.Error.info> TYPEOF
 %token <Support.Error.info> UNIT
@@ -51,7 +60,7 @@ open Core
 %start toplevel
 %type < Syntax.command list > toplevel
 
-%nonassoc ELSE THEN DOT
+%nonassoc ELSE THEN DOT OF IN
 
 %left VBARVBAR
 %left AMPAMP
@@ -86,6 +95,8 @@ Term :
       { TmAbs($1, $2.v, $4, $6) }
   | IF Term THEN Term ELSE Term
       { TmIf($1, $2, $4, $6) }
+  | LET LCID EQ Term IN Term
+      { TmLet($1, $2.v, $4, $6) }
   | Term PLUS Term
       { TmAdd($2, $1, $3) }
   | Term DASH Term
@@ -100,6 +111,22 @@ Term :
       { TmOr($2, $1, $3) }
   | Term EQ Term
       { TmEq($2, $1, $3) }
+  | EXCEPTION LCID OF Type IN Term
+      { TmException($1, $2.v, $4, $6) }
+  | THROW LCID Term AS Type
+      { TmThrow($1, $2.v, $3, $5) }
+  | TRY Term CATCH CatchClauseList
+      { TmTry($1, $2, $4) }
+
+CatchClauseList :
+    CatchClause
+      { [$1] }
+  | CatchClauseList CatchClause
+      { $2::$1 }
+
+CatchClause :
+    LCURLY LCID LCID AARROW Term RCURLY
+      { ($1, $2.v, $3.v, $5) }
 
 AppTerm :
     ATerm

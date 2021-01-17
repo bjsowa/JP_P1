@@ -9,9 +9,12 @@ open Support.Error
 (* Context management *)
 val emptycontext : context
 
-val lookup : info -> context -> string -> ty
+val lookup : (binding list) -> string -> ty
+val lookup_variable : info -> context -> string -> ty
 
-val addbinding : context -> string -> ty -> context
+val add_binding : (binding list) -> string -> ty -> (binding list)
+val add_variable_binding : context -> string -> ty -> context
+(* val add_exception_binding : context -> string -> ty -> context *)
 
 (* Extracting file info *)
 val tmInfo : term -> info

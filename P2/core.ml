@@ -4,15 +4,32 @@ open Support.Error
 
 (* ---------------------  CONTEXT MANAGEMENT  -------------------- *)
 
-let emptycontext = []
+let emptycontext = { variables = []; exceptions = [] }
 
-let addbinding ctx x typ = (x, typ) :: ctx
+let add_binding bindings x typ = (x, typ) :: bindings
 
-let lookup fi ctx x =
-  try List.assoc x ctx
+let add_variable_binding ctx x typ =
+  { ctx with variables = add_binding ctx.variables x typ }
+
+let add_exception_binding ctx x typ =
+  { ctx with exceptions = add_binding ctx.exceptions x typ }
+
+let lookup bindings x = List.assoc x bindings
+
+let lookup_variable fi ctx x =
+  try lookup ctx.variables x
   with Not_found ->
     let msg =
       Printf.sprintf "Variable lookup failure: Variable %s not found in context"
+    in
+    error fi (msg x)
+
+let lookup_exception fi ctx x =
+  try lookup ctx.exceptions x
+  with Not_found ->
+    let msg =
+      Printf.sprintf
+        "Exception lookup failure: Exception %s not found in context"
     in
     error fi (msg x)
 
@@ -22,6 +39,7 @@ let tmInfo t =
   match t with
   | TmVar (fi, _) -> fi
   | TmAbs (fi, _, _, _) -> fi
+  | TmLet (fi, _, _, _) -> fi
   | TmApp (fi, _, _) -> fi
   | TmNum (fi, _) -> fi
   | TmFix (fi, _) -> fi
@@ -36,6 +54,9 @@ let tmInfo t =
   | TmAnd (fi, _, _) -> fi
   | TmOr (fi, _, _) -> fi
   | TmUnit fi -> fi
+  | TmException (fi, _, _, _) -> fi
+  | TmThrow (fi, _, _, _) -> fi
+  | TmTry (fi, _, _) -> fi
 
 (* --------------------------  PRINTING  ------------------------- *)
 
@@ -64,9 +85,9 @@ let rec printtm_Term t =
   | TmIf (_, t1, t2, t3) ->
       pr "if ";
       printtm_Term t1;
-      pr "then ";
+      pr " then ";
       printtm_Term t2;
-      pr "else ";
+      pr " else ";
       printtm_Term t3
   | TmAbs (_, x, typ, t1) ->
       pr "lambda ";
@@ -75,6 +96,13 @@ let rec printtm_Term t =
       printty typ;
       pr ".";
       printtm_Term t1
+  | TmLet (_, x, t1, t2) ->
+      pr "let ";
+      pr x;
+      pr "=";
+      printtm_Term t1;
+      pr " in ";
+      printtm_Term t2
   | TmAdd (_, t1, t2) ->
       printtm_ATerm t1;
       pr "+";
@@ -103,12 +131,42 @@ let rec printtm_Term t =
       printtm_ATerm t1;
       pr "||";
       printtm_ATerm t2
+  | TmException (_, x, typ, t1) ->
+      pr "exception ";
+      pr x;
+      pr " of ";
+      printty typ;
+      pr " in ";
+      printtm_Term t1
+  | TmThrow (_, x, t1, typ) ->
+      pr "throw ";
+      pr x;
+      pr " ";
+      printtm_Term t1;
+      pr " as ";
+      printty typ
+  | TmTry (_, t1, c) ->
+      pr "try ";
+      printtm_Term t1;
+      pr " catch ";
+      List.iter
+        (function
+          | _, x1, x2, t2 ->
+              pr "{";
+              pr x1;
+              pr " ";
+              pr x2;
+              pr " => ";
+              printtm_Term t2;
+              pr "}")
+        c
   | _ -> printtm_AppTerm t
 
 and printtm_AppTerm t =
   match t with
   | TmApp (_, t1, t2) ->
       printtm_AppTerm t1;
+      pr " ";
       printtm_ATerm t2
   | TmFix (_, t1) ->
       pr "fix ";
@@ -133,11 +191,15 @@ let printtm t = printtm_Term t
 
 let rec infer_type ctx t =
   match t with
-  | TmVar (fi, x) -> lookup fi ctx x
+  | TmVar (fi, x) -> lookup_variable fi ctx x
   | TmAbs (_, x, typ, t1) ->
-      let ctx1 = addbinding ctx x typ in
+      let ctx1 = add_variable_binding ctx x typ in
       let typ1 = infer_type ctx1 t1 in
       TyFunc (typ, typ1)
+  | TmLet (_, x, t1, t2) ->
+      let typ = infer_type ctx t1 in
+      let ctx1 = add_variable_binding ctx x typ in
+      infer_type ctx1 t2
   | TmApp (fi, t1, t2) -> (
       let typ = infer_type ctx t1 in
       match typ with
@@ -173,6 +235,27 @@ let rec infer_type ctx t =
         else error fi "Mismatched types: If cases not match"
       else error fi "Mismatched types: If condition is not a boolean"
   | TmUnit _ -> TyUnit
+  | TmException (_, x, typ, t1) ->
+      let ctx1 = add_exception_binding ctx x typ in
+      infer_type ctx1 t1
+  | TmThrow (fi, x, t1, typ) ->
+      let typ1 = lookup_exception fi ctx x in
+      if check_type ctx t1 typ1 then typ
+      else error fi "Mismatched types: Wrong exception type"
+  | TmTry (_, t1, c) ->
+      let typ = infer_type ctx t1 in
+      List.iter
+        (function
+          | fi1, x1, x2, t2 ->
+              let typ1 = lookup_exception fi1 ctx x1 in
+              let ctx1 = add_variable_binding ctx x2 typ1 in
+              if check_type ctx1 t2 typ then ()
+              else
+                error fi1
+                  "Mismatched types: Catch clause type does not match the try \
+                   block type")
+        c;
+      typ
 
 and check_type ctx t typ =
   match t with
@@ -181,7 +264,7 @@ and check_type ctx t typ =
       | TyFunc (ftyp1, ftyp2) ->
           typ1 == ftyp1
           &&
-          let ctx1 = addbinding ctx x typ1 in
+          let ctx1 = add_variable_binding ctx x typ1 in
           check_type ctx1 t1 ftyp2
       | _ -> false )
   | TmApp (_, t1, t2) ->
