@@ -243,7 +243,7 @@ let rec infer_type ctx t =
       let typ = infer_type ctx t1 in
       match typ with
       | TyFunc (ty1, ty2) ->
-          if ty1 == ty2 then ty1
+          if ty1 = ty2 then ty1
           else error fi "Mismatched types: Not of shape (t -> t)"
       | _ -> error fi "Mismatched types: Not a function" )
   | TmTrue _ | TmFalse _ -> TyBool
@@ -293,7 +293,7 @@ and check_type ctx t typ =
   | TmAbs (_, x, typ1, t1) -> (
       match typ with
       | TyFunc (ftyp1, ftyp2) ->
-          typ1 == ftyp1
+          typ1 = ftyp1
           &&
           let ctx1 = add_variable_binding ctx x typ1 in
           check_type ctx1 t1 ftyp2
@@ -313,7 +313,7 @@ and check_type ctx t typ =
       check_type ctx t1 TyBool && check_type ctx t2 typ && check_type ctx t3 typ
   | _ ->
       let typ2 = infer_type ctx t in
-      typ == typ2
+      typ = typ2
 
 (* -----------------------  EVALUATION  --------------------- *)
 
@@ -389,7 +389,7 @@ and eval_kontinuation exs env ctx v =
       eval_kontinuation exs env ctx1 (VInt (vint_unpack v1 / vint_unpack v))
   | LEq t :: ctx1 -> eval_control exs env (REq v :: ctx1) t
   | REq v1 :: ctx1 ->
-      eval_kontinuation exs env ctx1 (VBool (vint_unpack v1 == vint_unpack v))
+      eval_kontinuation exs env ctx1 (VBool (vint_unpack v1 = vint_unpack v))
   | LAnd t :: ctx1 -> eval_control exs env (RAnd v :: ctx1) t
   | RAnd v1 :: ctx1 ->
       eval_kontinuation exs env ctx1 (VBool (vbool_unpack v1 && vbool_unpack v))
