@@ -47,7 +47,7 @@ type simple_context =
   | LLet of string * term
   | LApp of term
   | RApp of value
-  | CFix
+  (* | CFix *)
   | CIf of term * term
   | LAdd of term
   | RAdd of value
@@ -63,5 +63,14 @@ type simple_context =
   | RAnd of value
   | LOr of term
   | ROr of value
+  | CTry
+  | LThrow of throw_context
 
-type eval_context = simple_context list
+and eval_context = simple_context list
+
+and throw_context = (string * term) * exception_stack * environment * eval_context
+
+(* exception name, (binder, term) *)
+and exception_handler = string * (string * term)
+
+and exception_stack = (exception_handler list * environment * eval_context) list

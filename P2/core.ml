@@ -34,14 +34,28 @@ let lookup_exception_type fi ctx x =
     in
     error fi (msg x)
 
-let lookup_value fi env x =
+let lookup_variable fi env x =
   try List.assoc x env
   with Not_found ->
     let msg =
       Printf.sprintf
-        "Value lookup failure: Variable %s not found in environment"
+        "Variable lookup failure: Variable %s not found in environment"
     in
     error fi (msg x)
+
+let rec lookup_exception fi exs x =
+  match exs with
+  | [] ->
+      let msg =
+        Printf.sprintf
+          "Exception lookup failure: Exception %s not found in exception stack"
+      in
+      error fi (msg x)
+  | (ehl, env, ctx) :: exs1 -> (
+      try
+        let ex = List.assoc x ehl in
+        (ex, exs1, env, ctx)
+      with Not_found -> lookup_exception fi exs1 x )
 
 (* --------------------  EXTRACTING FILE INFO  ------------------- *)
 
@@ -201,7 +215,8 @@ let printv v =
   match v with
   | VInt v1 -> Format.print_int v1
   | VBool v1 -> Format.print_bool v1
-  | _ -> pr "dupa"
+  | VUnit -> pr "unit"
+  | VFunc (_env, _b, t) -> printtm t
 
 (* ------------------------  TYPE CHECKING  ----------------------- *)
 
@@ -315,62 +330,77 @@ let vfunc_unpack v =
 
 (* let term_subst  *)
 
-let rec eval_control env ctx t =
+let rec eval_control exs env ctx t =
+  (* printtm t; pr "\n"; *)
   match t with
   | TmVar (fi, x) ->
-      let v1 = lookup_value fi env x in
-      eval_kontinuation env ctx v1
-  | TmAbs (_, x, _, t1) -> eval_kontinuation env ctx (VFunc (env, x, t1))
-  | TmLet (_, x, t1, t2) -> eval_control env (LLet (x,t2) :: ctx) t1
-  | TmApp (_, t1, t2) -> eval_control env (LApp t2 :: ctx) t1
-  | TmNum (_, x) -> eval_kontinuation env ctx (VInt x)
-  | TmTrue _ -> eval_kontinuation env ctx (VBool true)
-  | TmFalse _ -> eval_kontinuation env ctx (VBool false)
-  | TmIf (_, t1, t2, t3) -> eval_control env (CIf (t2, t3) :: ctx) t1
-  | TmAdd (_, t1, t2) -> eval_control env (LAdd t2 :: ctx) t1
-  | TmSub (_, t1, t2) -> eval_control env (LSub t2 :: ctx) t1
-  | TmMult (_, t1, t2) -> eval_control env (LMult t2 :: ctx) t1
-  | TmDiv (_, t1, t2) -> eval_control env (LDiv t2 :: ctx) t1
-  | TmEq (_, t1, t2) -> eval_control env (LEq t2 :: ctx) t1
-  | TmAnd (_, t1, t2) -> eval_control env (LAnd t2 :: ctx) t1
-  | TmOr (_, t1, t2) -> eval_control env (LOr t2 :: ctx) t1
+      let v1 = lookup_variable fi env x in
+      eval_kontinuation exs env ctx v1
+  | TmAbs (_, x, _, t1) -> eval_kontinuation exs env ctx (VFunc (env, x, t1))
+  | TmLet (_, x, t1, t2) -> eval_control exs env (LLet (x, t2) :: ctx) t1
+  | TmApp (_, t1, t2) -> eval_control exs env (LApp t2 :: ctx) t1
+  | TmNum (_, x) -> eval_kontinuation exs env ctx (VInt x)
+  | TmTrue _ -> eval_kontinuation exs env ctx (VBool true)
+  | TmFalse _ -> eval_kontinuation exs env ctx (VBool false)
+  | TmIf (_, t1, t2, t3) -> eval_control exs env (CIf (t2, t3) :: ctx) t1
+  | TmAdd (_, t1, t2) -> eval_control exs env (LAdd t2 :: ctx) t1
+  | TmSub (_, t1, t2) -> eval_control exs env (LSub t2 :: ctx) t1
+  | TmMult (_, t1, t2) -> eval_control exs env (LMult t2 :: ctx) t1
+  | TmDiv (_, t1, t2) -> eval_control exs env (LDiv t2 :: ctx) t1
+  | TmEq (_, t1, t2) -> eval_control exs env (LEq t2 :: ctx) t1
+  | TmAnd (_, t1, t2) -> eval_control exs env (LAnd t2 :: ctx) t1
+  | TmOr (_, t1, t2) -> eval_control exs env (LOr t2 :: ctx) t1
+  | TmException (_, _, _, t1) -> eval_control exs env ctx t1
+  | TmTry (_, t1, c) ->
+      let cs = List.map (function _, ex, b, te -> (ex, (b, te))) c in
+      let exs1 = (cs, env, ctx) :: exs in
+      eval_control exs1 env (CTry :: ctx) t1
+  | TmThrow (fi, x, t, _) ->
+      let tc = lookup_exception fi exs x in
+      eval_control exs env (LThrow tc :: ctx) t
+  | TmUnit _ -> eval_kontinuation exs env ctx VUnit
   | _ -> VUnit
 
-and eval_kontinuation env ctx v =
+and eval_kontinuation exs env ctx v =
   match ctx with
   | [] -> v
-  | LLet (x,t) :: ctx1 -> 
-      let env1 = (x,v) :: env in
-      eval_control env1 ctx1 t
-  | LApp t :: ctx1 -> eval_control env (RApp v :: ctx1) t
+  | LLet (x, t) :: ctx1 ->
+      let env1 = (x, v) :: env in
+      eval_control exs env1 ctx1 t
+  | LApp t :: ctx1 -> eval_control exs env (RApp v :: ctx1) t
   | RApp v1 :: ctx1 ->
       let env1, x, t1 = vfunc_unpack v1 in
       let env2 = (x, v) :: env1 in
-      eval_control env2 ctx1 t1
+      eval_control exs env2 ctx1 t1
   | CIf (t1, t2) :: ctx1 ->
-      if vbool_unpack v then eval_control env ctx1 t1
-      else eval_control env ctx1 t2
-  | LAdd t :: ctx1 -> eval_control env (RAdd v :: ctx1) t
+      if vbool_unpack v then eval_control exs env ctx1 t1
+      else eval_control exs env ctx1 t2
+  | LAdd t :: ctx1 -> eval_control exs env (RAdd v :: ctx1) t
   | RAdd v1 :: ctx1 ->
-      eval_kontinuation env ctx1 (VInt (vint_unpack v1 + vint_unpack v))
-  | LSub t :: ctx1 -> eval_control env (RSub v :: ctx1) t
+      eval_kontinuation exs env ctx1 (VInt (vint_unpack v1 + vint_unpack v))
+  | LSub t :: ctx1 -> eval_control exs env (RSub v :: ctx1) t
   | RSub v1 :: ctx1 ->
-      eval_kontinuation env ctx1 (VInt (vint_unpack v1 - vint_unpack v))
-  | LMult t :: ctx1 -> eval_control env (RMult v :: ctx1) t
+      eval_kontinuation exs env ctx1 (VInt (vint_unpack v1 - vint_unpack v))
+  | LMult t :: ctx1 -> eval_control exs env (RMult v :: ctx1) t
   | RMult v1 :: ctx1 ->
-      eval_kontinuation env ctx1 (VInt (vint_unpack v1 * vint_unpack v))
-  | LDiv t :: ctx1 -> eval_control env (RDiv v :: ctx1) t
+      eval_kontinuation exs env ctx1 (VInt (vint_unpack v1 * vint_unpack v))
+  | LDiv t :: ctx1 -> eval_control exs env (RDiv v :: ctx1) t
   | RDiv v1 :: ctx1 ->
-      eval_kontinuation env ctx1 (VInt (vint_unpack v1 / vint_unpack v))
-  | LEq t :: ctx1 -> eval_control env (REq v :: ctx1) t
+      eval_kontinuation exs env ctx1 (VInt (vint_unpack v1 / vint_unpack v))
+  | LEq t :: ctx1 -> eval_control exs env (REq v :: ctx1) t
   | REq v1 :: ctx1 ->
-      eval_kontinuation env ctx1 (VBool (vint_unpack v1 == vint_unpack v))
-  | LAnd t :: ctx1 -> eval_control env (RAnd v :: ctx1) t
+      eval_kontinuation exs env ctx1 (VBool (vint_unpack v1 == vint_unpack v))
+  | LAnd t :: ctx1 -> eval_control exs env (RAnd v :: ctx1) t
   | RAnd v1 :: ctx1 ->
-      eval_kontinuation env ctx1 (VBool (vbool_unpack v1 && vbool_unpack v))
-  | LOr t :: ctx1 -> eval_control env (ROr v :: ctx1) t
+      eval_kontinuation exs env ctx1 (VBool (vbool_unpack v1 && vbool_unpack v))
+  | LOr t :: ctx1 -> eval_control exs env (ROr v :: ctx1) t
   | ROr v1 :: ctx1 ->
-      eval_kontinuation env ctx1 (VBool (vbool_unpack v1 || vbool_unpack v))
-  | _ -> VUnit
+      eval_kontinuation exs env ctx1 (VBool (vbool_unpack v1 || vbool_unpack v))
+  | CTry :: ctx1 ->
+      let exs1 = List.tl exs in
+      eval_kontinuation exs1 env ctx1 v
+  | LThrow ((b, t), exs1, env1, ctx1) :: _ ->
+      let env2 = (b, v) :: env1 in
+      eval_control exs1 env2 ctx1 t
 
-let eval t = eval_control [] [] t
+let eval t = eval_control [] [] [] t

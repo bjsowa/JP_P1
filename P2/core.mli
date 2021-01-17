@@ -15,7 +15,9 @@ val lookup_variable_type : info -> context -> string -> ty
 
 val lookup_exception_type : info -> context -> string -> ty
 
-val lookup_value : info -> environment -> string -> value
+val lookup_variable : info -> environment -> string -> value
+
+val lookup_exception : info -> exception_stack -> string -> throw_context
 
 val add_binding : binding list -> string -> ty -> binding list
 
@@ -39,8 +41,10 @@ val infer_type : context -> term -> ty
 val check_type : context -> term -> ty -> bool
 
 (* Evaluation *)
-val eval_control : environment -> eval_context -> term -> value
+val eval_control :
+  exception_stack -> environment -> eval_context -> term -> value
 
-val eval_kontinuation : environment -> eval_context -> value -> value
+val eval_kontinuation :
+  exception_stack -> environment -> eval_context -> value -> value
 
 val eval : term -> value
