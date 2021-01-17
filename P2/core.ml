@@ -321,6 +321,7 @@ let rec eval_control env ctx t =
       let v1 = lookup_value fi env x in
       eval_kontinuation env ctx v1
   | TmAbs (_, x, _, t1) -> eval_kontinuation env ctx (VFunc (env, x, t1))
+  | TmLet (_, x, t1, t2) -> eval_control env (LLet (x,t2) :: ctx) t1
   | TmApp (_, t1, t2) -> eval_control env (LApp t2 :: ctx) t1
   | TmNum (_, x) -> eval_kontinuation env ctx (VInt x)
   | TmTrue _ -> eval_kontinuation env ctx (VBool true)
@@ -338,6 +339,9 @@ let rec eval_control env ctx t =
 and eval_kontinuation env ctx v =
   match ctx with
   | [] -> v
+  | LLet (x,t) :: ctx1 -> 
+      let env1 = (x,v) :: env in
+      eval_control env1 ctx1 t
   | LApp t :: ctx1 -> eval_control env (RApp v :: ctx1) t
   | RApp v1 :: ctx1 ->
       let env1, x, t1 = vfunc_unpack v1 in

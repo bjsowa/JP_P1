@@ -44,7 +44,7 @@ type value =
 and environment = (string * value) list
 
 type simple_context =
-  | LLet of term
+  | LLet of string * term
   | LApp of term
   | RApp of value
   | CFix
