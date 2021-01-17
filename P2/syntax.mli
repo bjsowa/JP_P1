@@ -27,10 +27,35 @@ type term =
   | TmUnit of info
   | TmException of info * string * ty * term
   | TmThrow of info * string * term * ty
-  | TmTry of info * term * (info * string * string * term) list 
+  | TmTry of info * term * (info * string * string * term) list
 
 type command = Eval of info * term | TypeOf of info * term
 
 type binding = string * ty
 
 type context = { variables : binding list; exceptions : binding list }
+
+type value = VInt of int | VBool of bool | VUnit | VFunc of (value -> value)
+
+type simple_context =
+  | LLet of term
+  | LApp of term
+  | RApp of value
+  | CFix
+  | CIf of term * term
+  | LAdd of term
+  | RAdd of value
+  | LSub of term
+  | RSub of value
+  | LMult of term
+  | RMult of value
+  | LDiv of term
+  | RDiv of value
+  | LEq of term
+  | REq of value
+  | LAnd of term
+  | RAnd of value
+  | LOr of term
+  | ROr of value
+
+type eval_context = simple_context list

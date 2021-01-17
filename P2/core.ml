@@ -187,6 +187,12 @@ and printtm_ATerm t =
 
 let printtm t = printtm_Term t
 
+let printv v =
+  match v with
+  | VInt v1 -> Format.print_int v1
+  | VBool v1 -> Format.print_bool v1
+  | _ -> pr "dupa"
+
 (* ------------------------  TYPE CHECKING  ----------------------- *)
 
 let rec infer_type ctx t =
@@ -232,7 +238,7 @@ let rec infer_type ctx t =
       if check_type ctx t1 TyBool then
         let typ1 = infer_type ctx t2 in
         if check_type ctx t3 typ1 then typ1
-        else error fi "Mismatched types: If cases not match"
+        else error fi "Mismatched types: If then/else cases does not match"
       else error fi "Mismatched types: If condition is not a boolean"
   | TmUnit _ -> TyUnit
   | TmException (_, x, typ, t1) ->
@@ -283,3 +289,36 @@ and check_type ctx t typ =
   | _ ->
       let typ2 = infer_type ctx t in
       typ == typ2
+
+(* -----------------------  EVALUATION  --------------------- *)
+
+let vint_unpack v =
+  match v with VInt v1 -> v1 | _ -> err "Cannot unpack int. Expected VInt."
+
+let vbool_unpack v =
+  match v with VBool v1 -> v1 | _ -> err "Cannot unpack bool. Expected VBool."
+
+let rec eval_control t ctx =
+  match t with
+  | TmNum (_, x) -> eval_kontinuation (VInt x) ctx
+  | TmTrue _ -> eval_kontinuation (VBool true) ctx
+  | TmFalse _ -> eval_kontinuation (VBool false) ctx
+  | TmIf (_, t1, t2, t3) -> eval_control t1 (CIf (t2, t3) :: ctx)
+  | TmAdd (_, t1, t2) -> eval_control t1 (LAdd t2 :: ctx)
+  | TmEq (_, t1, t2) -> eval_control t1 (LEq t2 :: ctx)
+  | _ -> VUnit
+
+and eval_kontinuation v ctx =
+  match ctx with
+  | [] -> v
+  | CIf (t1, t2) :: ctx1 ->
+      if vbool_unpack v then eval_control t1 ctx1 else eval_control t2 ctx1
+  | LAdd t :: ctx1 -> eval_control t (RAdd v :: ctx1)
+  | RAdd v1 :: ctx1 ->
+      eval_kontinuation (VInt (vint_unpack v + vint_unpack v1)) ctx1
+  | LEq t :: ctx1 -> eval_control t (REq v :: ctx1)
+  | REq v1 :: ctx1 ->
+      eval_kontinuation (VBool (vint_unpack v == vint_unpack v1)) ctx1
+  | _ -> VUnit
+
+let eval t = eval_control t []

@@ -61,6 +61,10 @@ let process_command cmd =
   | Eval (_, t) ->
       pr "Evaluating: ";
       printtm t;
+      pr "\n";
+      let _ = infer_type emptycontext t in
+      let v = eval_control t [] in
+      printv v;
       pr "\n"
   | TypeOf (_, t) ->
       pr "Type Checking: ";
