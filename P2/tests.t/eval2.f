@@ -5,8 +5,10 @@ typeof let x = 5 = 5 in x;
 
 exception arithexc of Unit in
 let div = lambda x : Int. lambda y : Int. if y = 0 then throw arithexc unit as Int else x/y in
-try div 2 0 catch {arithexc _ => 42}
-   {arithexc c => 52};
+try div 2 0 catch {arithexc _ => 42};
+
+let div = lambda x : Int. lambda y : Int. if y = 0 then throw arithexc unit as Int else x/y in
+try div 2 0 catch {arithexc _ => 42};
 
 exception ex1 of Unit in try throw ex1 unit as Int catch {ex1 _ => 43};
 
@@ -21,3 +23,8 @@ silnia 5 + silnia 6;
 
 let add = lambda x : Int . lambda y : Int . x + y in
 add 5 3 + add 10 53;
+
+let count = lambda n : Int . 
+   if n = 0 then 0
+   else (n-1) * 2 in
+count 10;
