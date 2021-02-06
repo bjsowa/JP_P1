@@ -9,14 +9,19 @@ open Support.Error
 (* Context and environment management *)
 val emptycontext : context
 
-val add_binding : context -> string -> ty -> context
+val add_binding : context -> string -> cty -> context
 
-val lookup : info -> context -> string -> ty
+val lookup : info -> context -> string -> cty
 
 (* Extracting file info *)
 val tmInfo : term -> info
 
-(* Printing *)
+(* Printing *)  
 val printty : ty -> unit
 
 val printtm : term -> unit
+
+(* Type Checking *)
+val fresh_type_variable : unit -> cty
+
+val infer_type : context -> term -> (cty * constraints)

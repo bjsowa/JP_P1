@@ -27,6 +27,20 @@ type term =
 
 type command = TypeOf of info * term
 
-type binding = string * ty
+type type_variable = int
+
+type cty =
+  | CtyVar of type_variable
+  | CtyFunc of cty * cty
+  | CtyUnit
+  | CtyProd of cty * cty
+  | CtyVoid
+  | CtySum of cty * cty
+
+type binding = string * cty
 
 type context = binding list
+
+type cstr = cty * cty
+
+type constraints = cstr list
