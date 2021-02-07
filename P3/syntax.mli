@@ -41,6 +41,6 @@ type binding = string * cty
 
 type context = binding list
 
-type cstr = cty * cty
+type constr = cty * cty
 
-type constraints = cstr list
+type constraints = constr list

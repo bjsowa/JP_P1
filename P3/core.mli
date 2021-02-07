@@ -17,7 +17,9 @@ val lookup : info -> context -> string -> cty
 val tmInfo : term -> info
 
 (* Printing *)  
-val printty : ty -> unit
+val printcty : cty -> unit
+
+val printconstr : constr -> unit
 
 val printtm : term -> unit
 

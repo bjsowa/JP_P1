@@ -62,7 +62,18 @@ let process_command (TypeOf (_fi, t)) =
       pr "Type Checking: ";
       printtm t;
       pr "\n" );
-    pr "\n"
+    let typ, cstrs = infer_type emptycontext t in
+    if !verbose then (
+      pr "Before unification: ";
+      printcty typ;
+      pr "\nConstraints:\n";
+      List.iter
+        (fun cstr ->
+          printconstr cstr;
+          pr "\n")
+        cstrs;
+      pr "After unification: " );
+    pr "\n\n"
   with Exit _ -> ()
 
 let main () =

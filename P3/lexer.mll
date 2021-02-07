@@ -11,29 +11,27 @@ open Support.Error
 
 let reservedWords = [
   (* Keywords *)
-  ("lambda", fun i -> Parser.LAMBDA i);
-  ("unit", fun i -> Parser.UNIT i);
-  ("let", fun i -> Parser.LET i);
+  ("abort", fun i -> Parser.ABORT i);
+  ("case", fun i -> Parser.CASE i);
   ("in", fun i -> Parser.IN i);
+  ("in1", fun i -> Parser.IN1 i);
+  ("in2", fun i -> Parser.IN2 i);
+  ("lambda", fun i -> Parser.LAMBDA i);
+  ("let", fun i -> Parser.LET i);
+  ("of", fun i -> Parser.OF i);
+  ("unit", fun i -> Parser.UNIT i);
 
   (* Symbols *)
-  ("*", fun i -> Parser.STAR i);
-  ("||", fun i -> Parser.VBARVBAR i);
-  ("&&", fun i -> Parser.AMPAMP i);
+  (",", fun i -> Parser.COMMA i);
   (".", fun i -> Parser.DOT i);
   (";", fun i -> Parser.SEMI i);
-  ("/", fun i -> Parser.SLASH i);
-  (":", fun i -> Parser.COLON i);
-  ("=", fun i -> Parser.EQ i);
-  ("{", fun i -> Parser.LCURLY i); 
-  ("(", fun i -> Parser.LPAREN i); 
-  ("}", fun i -> Parser.RCURLY i);
+  ("(", fun i -> Parser.LPAREN i);
   (")", fun i -> Parser.RPAREN i);
-  ("+", fun i -> Parser.PLUS i);
-  ("-", fun i -> Parser.DASH i);
-  ("->", fun i -> Parser.ARROW i);
   ("=>", fun i -> Parser.AARROW i);
   ("_", fun i -> Parser.USCORE i);
+  ("<", fun i -> Parser.LANGLE i);
+  (">", fun i -> Parser.RANGLE i);
+  ("|", fun i -> Parser.VBAR i);
 ]
 
 (* Support functions *)
@@ -119,12 +117,9 @@ rule main = parse
 | ['0'-'9']+ '.' ['0'-'9']+
     { Parser.FLOATV{i=info lexbuf; v=float_of_string (text lexbuf)} }
 
-| ['A'-'Z' 'a'-'z' '_']
-  ['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']*
-    { createID (info lexbuf) (text lexbuf) }
-
-| "&&" | "||" | "->" | "=>"
-| ['*' '/' '(' ')' '{' '}' '.' ';' '=' '+' '-' ':' '_']
+| ['A'-'Z' 'a'-'z' '_']['A'-'Z' 'a'-'z' '_' '0'-'9' '\'']*
+| ['(' ')' ',' '.' ';' '_' '<' '>' '|']
+| "=>"
     { createID (info lexbuf) (text lexbuf) }
 
 | "\"" { resetStr(); startLex := info lexbuf; string lexbuf }
@@ -177,5 +172,3 @@ and escaped = parse
     }
 | [^ '"' '\\' 't' 'n' '\'']
     { error (info lexbuf) "Illegal character constant" }
-
-(*  *)
