@@ -17,17 +17,60 @@ let lookup fi ctx x =
     in
     error fi (msg x)
 
-(* --------------------  EXTRACTING FILE INFO  ------------------- *)
+(* -----------------------  EXTRACTING INFO  ---------------------- *)
 
 let tmInfo t =
   match t with
-  | TmVar (fi, _) -> fi
-  | TmAbs (fi, _, _) -> fi
-  | TmApp (fi, _, _) -> fi
-  | TmUnit fi -> fi
-  | _ -> dummyinfo
+  | TmVar (fi, _, _) -> fi
+  | TmAbs (fi, _, _, _) -> fi
+  | TmApp (fi, _, _, _) -> fi
+  | TmUnit (fi, _) -> fi
+  | TmProd (fi, _, _, _) -> fi
+  | TmProj (fi, _, _, _) -> fi
+  | TmAbort (fi, _, _) -> fi
+  | TmIn (fi, _, _, _) -> fi
+  | TmCase (fi, _, _, _, _) -> fi
+
+let tmTyann t =
+  match t with
+  | TmVar (_, ann, _) -> ann
+  | TmAbs (_, ann, _, _) -> ann
+  | TmApp (_, ann, _, _) -> ann
+  | TmUnit (_, ann) -> ann
+  | TmProd (_, ann, _, _) -> ann
+  | TmProj (_, ann, _, _) -> ann
+  | TmAbort (_, ann, _) -> ann
+  | TmIn (_, ann, _, _) -> ann
+  | TmCase (_, ann, _, _, _) -> ann
 
 (* --------------------------  PRINTING  ------------------------- *)
+
+let rec printty_Type typ =
+  match typ with
+  | TyFunc (typ1, typ2) ->
+      printty_AType typ1;
+      pr " -> ";
+      printty_Type typ2
+  | TyProd (typ1, typ2) ->
+      printty_AType typ1;
+      pr " x ";
+      printty_AType typ2
+  | TySum (typ1, typ2) ->
+      printty_AType typ1;
+      pr " + ";
+      printty_AType typ2
+  | _ -> printty_AType typ
+
+and printty_AType typ =
+  match typ with
+  | TyUnit -> pr "Unit"
+  | TyVoid -> pr "Void"
+  | _ ->
+      pr "(";
+      printty_Type typ;
+      pr ")"
+
+let printty typ = printty_Type typ
 
 let rec printcty_Type typ =
   match typ with
@@ -47,7 +90,7 @@ let rec printcty_Type typ =
 
 and printcty_AType typ =
   match typ with
-  | CtyVar v -> 
+  | CtyVar v ->
       pr "v";
       Format.print_int v
   | CtyUnit -> pr "Unit"
@@ -59,14 +102,14 @@ and printcty_AType typ =
 
 let printcty typ = printcty_Type typ
 
-let printconstr (typ1,typ2) =
+let printconstr (typ1, typ2) =
   printcty typ1;
   pr " = ";
-  printcty typ2 
+  printcty typ2
 
 let rec printtm_Term t =
   match t with
-  | TmAbs (_, x, t1) ->
+  | TmAbs (_, _, x, t1) ->
       pr "lambda ";
       pr x;
       pr ".";
@@ -75,7 +118,7 @@ let rec printtm_Term t =
 
 and printtm_AppTerm t =
   match t with
-  | TmApp (_, t1, t2) ->
+  | TmApp (_, _, t1, t2) ->
       printtm_AppTerm t1;
       pr " ";
       printtm_ATerm t2
@@ -83,28 +126,28 @@ and printtm_AppTerm t =
 
 and printtm_ATerm t =
   match t with
-  | TmVar (_, x) -> pr x
-  | TmUnit _ -> pr "unit"
-  | TmProd (_, t1, t2) ->
+  | TmVar (_, _, x) -> pr x
+  | TmUnit (_, _) -> pr "unit"
+  | TmProd (_, _, t1, t2) ->
       pr "<";
       printtm_Term t1;
       pr ",";
       printtm_Term t2;
       pr ">"
-  | TmProj (_, t1, id) ->
+  | TmProj (_, _, t1, id) ->
       pr "p";
       printid id;
       pr " ";
       printtm_ATerm t1
-  | TmAbort (_, t1) ->
+  | TmAbort (_, _, t1) ->
       pr "abort ";
       printtm_ATerm t1
-  | TmIn (_, id, t1) ->
+  | TmIn (_, _, id, t1) ->
       pr "in";
       printid id;
       pr " ";
       printtm_ATerm t1
-  | TmCase (_, t1, (x2, t2), (x3, t3)) ->
+  | TmCase (_, _, t1, (x2, t2), (x3, t3)) ->
       pr "case ";
       printtm_ATerm t1;
       pr " of in1 ";
@@ -124,6 +167,38 @@ and printid id = Format.print_int (match id with ID_1 -> 1 | _ -> 2)
 
 let printtm t = printtm_Term t
 
+let printtyann ann =
+  match ann with
+  | Unknown -> pr "Unknown"
+  | Type typ ->
+      pr "Type ";
+      printty typ
+  | CType typ ->
+      pr "CType ";
+      printcty typ
+
+let rec printtm_ann t =
+  ( match t with
+  | TmAbs (_, _, _, t1) -> printtm_ann t1
+  | TmApp (_, _, t1, t2) ->
+      printtm_ann t1;
+      printtm_ann t2
+  | TmProd (_, _, t1, t2) ->
+      printtm_ann t1;
+      printtm_ann t2
+  | TmProj (_, _, t1, _) -> printtm_ann t1
+  | TmAbort (_, _, t1) -> printtm_ann t1
+  | TmIn (_, _, _, t1) -> printtm_ann t1
+  | TmCase (_, _, t1, (_, t2), (_, t3)) ->
+      printtm_ann t1;
+      printtm_ann t2;
+      printtm_ann t3
+  | _ -> () );
+  printtm t;
+  pr " : ";
+  printtyann (tmTyann t);
+  pr "\n"
+
 (* --------------------------  TYPE CHECKING  ------------------------- *)
 
 let type_counter = ref 0
@@ -135,55 +210,60 @@ let fresh_type_variable () =
 
 let rec infer_type ctx t =
   match t with
-  | TmVar (fi, x) ->
+  | TmVar (fi, _, x) ->
       let typ = lookup fi ctx x in
-      (typ, [])
-  | TmAbs (_, x, t1) ->
+      (TmVar (fi, CType typ, x), typ, [])
+  | TmAbs (fi, _, x, t1) ->
       let fresh = fresh_type_variable () in
       let ctx1 = add_binding ctx x fresh in
-      let typ, cstrs = infer_type ctx1 t1 in
-      (CtyFunc (fresh, typ), cstrs)
-  | TmApp (_, t1, t2) ->
-      let typ1, cstrs1 = infer_type ctx t1 in
-      let typ2, cstrs2 = infer_type ctx t2 in
-      let fresh = fresh_type_variable () in
-      let cstr = (CtyFunc (typ2, fresh), typ1) in
-      (fresh, cstr :: List.append cstrs1 cstrs2)
-  | TmUnit _ -> (CtyUnit, [])
-  | TmProd (_, t1, t2) ->
-      let typ1, cstrs1 = infer_type ctx t1 in
-      let typ2, cstrs2 = infer_type ctx t2 in
-      (CtyProd (typ1, typ2), List.append cstrs1 cstrs2)
-  | TmProj (_, t1, id) ->
+      let tann1, typ1, cstrs1 = infer_type ctx1 t1 in
+      let typ = CtyFunc (fresh, typ1) in
+      (TmAbs (fi, CType typ, x, tann1), typ, cstrs1)
+  | TmApp (fi, _, t1, t2) ->
+      let tann1, typ1, cstrs1 = infer_type ctx t1 in
+      let tann2, typ2, cstrs2 = infer_type ctx t2 in
+      let typ = fresh_type_variable () in
+      let cstr = (CtyFunc (typ2, typ), typ1) in
+      ( TmApp (fi, CType typ, tann1, tann2),
+        typ,
+        cstr :: List.append cstrs1 cstrs2 )
+  | TmUnit (fi, _) -> (TmUnit (fi, CType CtyUnit), CtyUnit, [])
+  | TmProd (fi, _, t1, t2) ->
+      let tann1, typ1, cstrs1 = infer_type ctx t1 in
+      let tann2, typ2, cstrs2 = infer_type ctx t2 in
+      let typ = CtyProd (typ1, typ2) in
+      (TmProd (fi, CType typ, tann1, tann2), typ, List.append cstrs1 cstrs2)
+  | TmProj (fi, _, t1, id) ->
       let fresh1 = fresh_type_variable () in
       let fresh2 = fresh_type_variable () in
-      let typ1, cstrs1 = infer_type ctx t1 in
+      let tann1, typ1, cstrs1 = infer_type ctx t1 in
+      let typ = match id with ID_1 -> fresh1 | ID_2 -> fresh2 in
       let cstr = (typ1, CtyProd (fresh1, fresh2)) in
-      ((match id with ID_1 -> fresh1 | ID_2 -> fresh2), cstr :: cstrs1)
-  | TmAbort (_, t1) ->
-      let typ1, cstrs1 = infer_type ctx t1 in
-      let fresh = fresh_type_variable () in
+      (TmProj (fi, CType typ, tann1, id), typ, cstr :: cstrs1)
+  | TmAbort (fi, _, t1) ->
+      let tann1, typ1, cstrs1 = infer_type ctx t1 in
+      let typ = fresh_type_variable () in
       let cstr = (typ1, CtyVoid) in
-      (fresh, cstr :: cstrs1)
-  | TmIn (_, id, t1) ->
-      let typ1, cstrs1 = infer_type ctx t1 in
+      (TmAbort (fi, CType typ, tann1), typ, cstr :: cstrs1)
+  | TmIn (fi, _, id, t1) ->
+      let tann1, typ1, cstrs1 = infer_type ctx t1 in
       let fresh = fresh_type_variable () in
-      let ctyp =
+      let typ =
         match id with
         | ID_1 -> CtySum (typ1, fresh)
         | ID_2 -> CtySum (fresh, typ1)
       in
-      (ctyp, cstrs1)
-  | TmCase (_, t1, (x2, t2), (x3, t3)) ->
-      let typ1, cstrs1 = infer_type ctx t1 in
+      (TmIn (fi, CType typ, id, tann1), typ, cstrs1)
+  | TmCase (fi, _, t1, (x2, t2), (x3, t3)) ->
+      let tann1, typ1, cstrs1 = infer_type ctx t1 in
       let fresh1 = fresh_type_variable () in
       let fresh2 = fresh_type_variable () in
       let ctx2 = add_binding ctx x2 fresh1 in
-      let typ2, cstrs2 = infer_type ctx2 t2 in
+      let tann2, typ2, cstrs2 = infer_type ctx2 t2 in
       let ctx3 = add_binding ctx x3 fresh2 in
-      let typ3, cstrs3 = infer_type ctx3 t3 in
+      let tann3, typ3, cstrs3 = infer_type ctx3 t3 in
       let cstr1 = (typ1, CtySum (fresh1, fresh2)) in
       let cstr2 = (typ2, typ3) in
-      (typ2, List.concat [ [ cstr1; cstr2 ]; cstrs1; cstrs2; cstrs3 ])
-
-(* | _ -> (CtyUnit, []) *)
+      ( TmCase (fi, CType typ2, tann1, (x2, tann2), (x3, tann3)),
+        typ2,
+        List.concat [ [ cstr1; cstr2 ]; cstrs1; cstrs2; cstrs3 ] )

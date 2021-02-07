@@ -66,34 +66,34 @@ Term :
     AppTerm
       { $1 }
   | LAMBDA LCID DOT Term 
-      { TmAbs($1, $2.v, $4) }
+      { TmAbs($1, Unknown, $2.v, $4) }
   | LAMBDA USCORE DOT Term 
-      { TmAbs($1, "_", $4) }
+      { TmAbs($1, Unknown, "_", $4) }
 
 AppTerm :
     ATerm
       { $1 }
   | AppTerm ATerm
-      { TmApp(tmInfo $1, $1, $2) }
+      { TmApp(tmInfo $1, Unknown, $1, $2) }
 
 ATerm :
     LPAREN Term RPAREN  
       { $2 } 
   | LCID
-      { TmVar($1.i, $1.v) }
+      { TmVar($1.i, Unknown, $1.v) }
   | UNIT
-      { TmUnit($1) }
+      { TmUnit($1, Unknown) }
   | LANGLE Term COMMA Term RANGLE
-      { TmProd($1, $2, $4) }
+      { TmProd($1, Unknown, $2, $4) }
   | PROJ1 ATerm
-      { TmProj($1, $2, ID_1) }
+      { TmProj($1, Unknown, $2, ID_1) }
   | PROJ2 ATerm
-      { TmProj($1, $2, ID_2) }
+      { TmProj($1, Unknown, $2, ID_2) }
   | ABORT ATerm
-      { TmAbort($1, $2) }
+      { TmAbort($1, Unknown, $2) }
   | IN1 ATerm
-      { TmIn($1, ID_1, $2) }
+      { TmIn($1, Unknown, ID_1, $2) }
   | IN2 ATerm
-      { TmIn($1, ID_2, $2) }
+      { TmIn($1, Unknown, ID_2, $2) }
   | CASE ATerm OF IN1 LCID AARROW ATerm VBAR IN2 LCID AARROW ATerm
-      { TmCase($1, $2, ($5.v, $7), ($10.v, $12)) } 
+      { TmCase($1, Unknown, $2, ($5.v, $7), ($10.v, $12)) } 

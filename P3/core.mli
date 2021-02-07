@@ -13,17 +13,27 @@ val add_binding : context -> string -> cty -> context
 
 val lookup : info -> context -> string -> cty
 
-(* Extracting file info *)
+(* Extracting info *)
 val tmInfo : term -> info
 
-(* Printing *)  
+val tmTyann : term -> tyann
+
+(* Printing *)
+val printty : ty -> unit
+
 val printcty : cty -> unit
 
 val printconstr : constr -> unit
 
 val printtm : term -> unit
 
+val printtyann : tyann -> unit
+
+val printtm_ann : term -> unit
+
 (* Type Checking *)
+val type_counter : int ref
 val fresh_type_variable : unit -> cty
 
-val infer_type : context -> term -> (cty * constraints)
+(* The returned term contains type annotations *)
+val infer_type : context -> term -> term * cty * constraints
