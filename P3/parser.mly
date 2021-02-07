@@ -34,6 +34,8 @@ open Core
 %token <Support.Error.info> EOF
 %token <Support.Error.info> LPAREN
 %token <Support.Error.info> LANGLE
+%token <Support.Error.info> PROJ1
+%token <Support.Error.info> PROJ2
 %token <Support.Error.info> RPAREN
 %token <Support.Error.info> RANGLE
 %token <Support.Error.info> SEMI
@@ -83,8 +85,10 @@ ATerm :
       { TmUnit($1) }
   | LANGLE Term COMMA Term RANGLE
       { TmProd($1, $2, $4) }
-  | ATerm DOT ID
-      { TmProj(tmInfo $1, $1, $3) }
+  | PROJ1 ATerm
+      { TmProj($1, $2, ID_1) }
+  | PROJ2 ATerm
+      { TmProj($1, $2, ID_2) }
   | ABORT ATerm
       { TmAbort($1, $2) }
   | IN1 ATerm
@@ -93,10 +97,3 @@ ATerm :
       { TmIn($1, ID_2, $2) }
   | CASE ATerm OF IN1 LCID AARROW ATerm VBAR IN2 LCID AARROW ATerm
       { TmCase($1, $2, ($5.v, $7), ($10.v, $12)) } 
-
-ID :
-    INTV
-      { match $1.v with 
-          1 -> ID_1 
-        | 2 -> ID_2
-        | _ -> error $1.i "Parse error: Wrong index, expected 1 or 2" }

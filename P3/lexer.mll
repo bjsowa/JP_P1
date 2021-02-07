@@ -20,6 +20,8 @@ let reservedWords = [
   ("let", fun i -> Parser.LET i);
   ("of", fun i -> Parser.OF i);
   ("unit", fun i -> Parser.UNIT i);
+  ("p1", fun i -> Parser.PROJ1 i);
+  ("p2", fun i -> Parser.PROJ2 i);
 
   (* Symbols *)
   (",", fun i -> Parser.COMMA i);

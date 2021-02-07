@@ -92,9 +92,10 @@ and printtm_ATerm t =
       printtm_Term t2;
       pr ">"
   | TmProj (_, t1, id) ->
-      printtm_ATerm t1;
-      pr ".";
-      printid id
+      pr "p";
+      printid id;
+      pr " ";
+      printtm_ATerm t1
   | TmAbort (_, t1) ->
       pr "abort ";
       printtm_ATerm t1
