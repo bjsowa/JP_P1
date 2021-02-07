@@ -112,6 +112,7 @@ and printtm_ATerm t =
       printtm_ATerm t2;
       pr " | in2 ";
       pr x3;
+      pr " => ";
       printtm_ATerm t3
   | _ ->
       pr "(";
