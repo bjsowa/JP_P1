@@ -74,9 +74,10 @@ let process_command (TypeOf (_fi, t)) =
           pr "\n")
         cstrs;
       pr "After unification:\n" );
-    let ut = unify tann cstrs in
-    printtm_ann ut;
-    pr "\n\n"
+    let ut, typ = unify tann cstrs in
+    if !verbose then printtm_ann ut;
+    printty typ;
+    pr "\n"
   with Exit _ -> ()
 
 let main () =

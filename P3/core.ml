@@ -199,6 +199,16 @@ let rec printtm_ann t =
   printtyann (tmTyann t);
   pr "\n"
 
+let printuarr uarr =
+  Array.iteri
+    (fun i ctyp ->
+      pr "v";
+      print_int i;
+      pr " => ";
+      printcty ctyp;
+      pr "\n")
+    uarr
+
 (* --------------------------  TYPE CHECKING  ------------------------- *)
 
 let type_counter = ref 0
@@ -295,9 +305,14 @@ let rec find ctyp uarr =
       CtySum (utyp1, utyp2)
 
 let rec process_constraints cstrs uarr =
+  (* pr "Unification array:\n";
+     printuarr uarr; *)
   match cstrs with
   | [] -> ()
   | ((ctyp1, ctyp2) as cstr) :: cstrs1 -> (
+      (* pr "Constraint: ";
+         printconstr cstr;
+         pr "\n"; *)
       let u = find ctyp1 uarr in
       let v = find ctyp2 uarr in
       match (u, v) with
@@ -309,15 +324,34 @@ let rec process_constraints cstrs uarr =
       | CtyVar i1, CtyVar i2 ->
           uarr.(i1) <- CtyVar i2;
           process_constraints cstrs1 uarr
-      | CtyVar i1, c1 | c1, CtyVar i1 -> uarr.(i1) <- c1
+      | CtyVar i1, c1 | c1, CtyVar i1 ->
+          uarr.(i1) <- c1;
+          process_constraints cstrs1 uarr
       | _ ->
           errf (fun () ->
               pr "Error: Unification failed at constraint: ";
               printconstr cstr) )
 
+let rec ctype_to_type ctyp =
+  match ctyp with
+  | CtyVar _ | CtyUnit -> TyUnit
+  | CtyVoid -> TyVoid
+  | CtyFunc (ctyp1, ctyp2) ->
+      let typ1 = ctype_to_type ctyp1 in
+      let typ2 = ctype_to_type ctyp2 in
+      TyFunc (typ1, typ2)
+  | CtyProd (ctyp1, ctyp2) ->
+      let typ1 = ctype_to_type ctyp1 in
+      let typ2 = ctype_to_type ctyp2 in
+      TyProd (typ1, typ2)
+  | CtySum (ctyp1, ctyp2) ->
+      let typ1 = ctype_to_type ctyp1 in
+      let typ2 = ctype_to_type ctyp2 in
+      TySum (typ1, typ2)
+
 let subst_tyann ann uarr =
   match ann with
-  | CType ctyp -> CType (find ctyp uarr)
+  | CType ctyp -> Type (ctype_to_type (find ctyp uarr))
   | _ -> err "Trying to substitute a non-constrained type"
 
 let rec subst_term t uarr =
@@ -347,26 +381,28 @@ let rec subst_term t uarr =
       let ann1 = subst_tyann ann uarr in
       let st1 = subst_term t1 uarr in
       TmAbort (fi, ann1, st1)
-  | TmIn (fi, ann, id, t1) -> 
+  | TmIn (fi, ann, id, t1) ->
       let ann1 = subst_tyann ann uarr in
       let st1 = subst_term t1 uarr in
       TmIn (fi, ann1, id, st1)
-  | TmCase (fi, ann, t1, (x2,t2), (x3,t3)) ->
+  | TmCase (fi, ann, t1, (x2, t2), (x3, t3)) ->
       let ann1 = subst_tyann ann uarr in
       let st1 = subst_term t1 uarr in
       let st2 = subst_term t2 uarr in
       let st3 = subst_term t3 uarr in
-      TmCase (fi, ann1, st1, (x2,st2), (x3,st3))
+      TmCase (fi, ann1, st1, (x2, st2), (x3, st3))
   | _ -> t
+
+let get_type ann =
+  match ann with
+  | Type typ -> typ
+  | _ -> err "Internal Error: Expected type annotation"
 
 let unify t cstrs =
   let uarr = init_unification_array () in
   process_constraints cstrs uarr;
-  Array.iteri (fun i ctyp -> 
-    pr "v";
-    print_int i;
-    pr " => ";
-    printcty ctyp;
-    pr "\n";
-  ) uarr;
-  subst_term t uarr
+  (* pr "Unification array:\n";
+     printuarr uarr; *)
+  let t1 = subst_term t uarr in
+  let typ = get_type (tmTyann t1) in
+  (t1, typ)

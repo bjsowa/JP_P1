@@ -31,6 +31,8 @@ val printtyann : tyann -> unit
 
 val printtm_ann : term -> unit
 
+val printuarr : unification_array -> unit
+
 (* Type Checking *)
 val type_counter : int ref
 
@@ -43,4 +45,4 @@ val infer_type : context -> term -> term * cty * constraints
 
 val process_constraints : constraints -> unification_array -> unit
 
-val unify : term -> constraints -> term
+val unify : term -> constraints -> term * ty
