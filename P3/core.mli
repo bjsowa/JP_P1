@@ -33,7 +33,14 @@ val printtm_ann : term -> unit
 
 (* Type Checking *)
 val type_counter : int ref
+
+val reset_type_counter : unit -> unit
+
 val fresh_type_variable : unit -> cty
 
 (* The returned term contains type annotations *)
 val infer_type : context -> term -> term * cty * constraints
+
+val process_constraints : constraints -> unification_array -> unit
+
+val unify : term -> constraints -> term

@@ -46,3 +46,5 @@ type context = binding list
 type constr = cty * cty
 
 type constraints = constr list
+
+type unification_array = cty array

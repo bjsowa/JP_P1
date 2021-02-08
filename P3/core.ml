@@ -203,6 +203,8 @@ let rec printtm_ann t =
 
 let type_counter = ref 0
 
+let reset_type_counter () = type_counter := 0
+
 let fresh_type_variable () =
   let ret = !type_counter in
   type_counter := ret + 1;
@@ -267,3 +269,104 @@ let rec infer_type ctx t =
       ( TmCase (fi, CType typ2, tann1, (x2, tann2), (x3, tann3)),
         typ2,
         List.concat [ [ cstr1; cstr2 ]; cstrs1; cstrs2; cstrs3 ] )
+
+let init_unification_array () =
+  let uarr : unification_array = Array.init !type_counter (fun i -> CtyVar i) in
+  uarr
+
+let rec find ctyp uarr =
+  match ctyp with
+  | CtyVar i ->
+      let utyp = uarr.(i) in
+      if utyp = ctyp then utyp else find utyp uarr
+  | CtyUnit -> CtyUnit
+  | CtyVoid -> CtyVoid
+  | CtyFunc (ctyp1, ctyp2) ->
+      let utyp1 = find ctyp1 uarr in
+      let utyp2 = find ctyp2 uarr in
+      CtyFunc (utyp1, utyp2)
+  | CtyProd (ctyp1, ctyp2) ->
+      let utyp1 = find ctyp1 uarr in
+      let utyp2 = find ctyp2 uarr in
+      CtyProd (utyp1, utyp2)
+  | CtySum (ctyp1, ctyp2) ->
+      let utyp1 = find ctyp1 uarr in
+      let utyp2 = find ctyp2 uarr in
+      CtySum (utyp1, utyp2)
+
+let rec process_constraints cstrs uarr =
+  match cstrs with
+  | [] -> ()
+  | ((ctyp1, ctyp2) as cstr) :: cstrs1 -> (
+      let u = find ctyp1 uarr in
+      let v = find ctyp2 uarr in
+      match (u, v) with
+      | CtyFunc (cc11, cc12), CtyFunc (cc21, cc22)
+      | CtyProd (cc11, cc12), CtyProd (cc21, cc22)
+      | CtySum (cc11, cc12), CtySum (cc21, cc22) ->
+          process_constraints ((cc11, cc21) :: (cc12, cc22) :: cstrs1) uarr
+      | CtyUnit, CtyUnit | CtyVoid, CtyVoid -> process_constraints cstrs1 uarr
+      | CtyVar i1, CtyVar i2 ->
+          uarr.(i1) <- CtyVar i2;
+          process_constraints cstrs1 uarr
+      | CtyVar i1, c1 | c1, CtyVar i1 -> uarr.(i1) <- c1
+      | _ ->
+          errf (fun () ->
+              pr "Error: Unification failed at constraint: ";
+              printconstr cstr) )
+
+let subst_tyann ann uarr =
+  match ann with
+  | CType ctyp -> CType (find ctyp uarr)
+  | _ -> err "Trying to substitute a non-constrained type"
+
+let rec subst_term t uarr =
+  match t with
+  | TmVar (fi, ann, t1) ->
+      let ann1 = subst_tyann ann uarr in
+      TmVar (fi, ann1, t1)
+  | TmAbs (fi, ann, x, t1) ->
+      let ann1 = subst_tyann ann uarr in
+      let st1 = subst_term t1 uarr in
+      TmAbs (fi, ann1, x, st1)
+  | TmApp (fi, ann, t1, t2) ->
+      let ann1 = subst_tyann ann uarr in
+      let st1 = subst_term t1 uarr in
+      let st2 = subst_term t2 uarr in
+      TmApp (fi, ann1, st1, st2)
+  | TmProd (fi, ann, t1, t2) ->
+      let ann1 = subst_tyann ann uarr in
+      let st1 = subst_term t1 uarr in
+      let st2 = subst_term t2 uarr in
+      TmProd (fi, ann1, st1, st2)
+  | TmProj (fi, ann, t1, id) ->
+      let ann1 = subst_tyann ann uarr in
+      let st1 = subst_term t1 uarr in
+      TmProj (fi, ann1, st1, id)
+  | TmAbort (fi, ann, t1) ->
+      let ann1 = subst_tyann ann uarr in
+      let st1 = subst_term t1 uarr in
+      TmAbort (fi, ann1, st1)
+  | TmIn (fi, ann, id, t1) -> 
+      let ann1 = subst_tyann ann uarr in
+      let st1 = subst_term t1 uarr in
+      TmIn (fi, ann1, id, st1)
+  | TmCase (fi, ann, t1, (x2,t2), (x3,t3)) ->
+      let ann1 = subst_tyann ann uarr in
+      let st1 = subst_term t1 uarr in
+      let st2 = subst_term t2 uarr in
+      let st3 = subst_term t3 uarr in
+      TmCase (fi, ann1, st1, (x2,st2), (x3,st3))
+  | _ -> t
+
+let unify t cstrs =
+  let uarr = init_unification_array () in
+  process_constraints cstrs uarr;
+  Array.iteri (fun i ctyp -> 
+    pr "v";
+    print_int i;
+    pr " => ";
+    printcty ctyp;
+    pr "\n";
+  ) uarr;
+  subst_term t uarr

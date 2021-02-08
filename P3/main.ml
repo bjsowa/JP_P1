@@ -62,7 +62,7 @@ let process_command (TypeOf (_fi, t)) =
       pr "Type Checking: ";
       printtm t;
       pr "\n" );
-    type_counter := 0;
+    reset_type_counter ();
     let tann, _typ, cstrs = infer_type emptycontext t in
     if !verbose then (
       pr "Before unification:\n";
@@ -73,7 +73,9 @@ let process_command (TypeOf (_fi, t)) =
           printconstr cstr;
           pr "\n")
         cstrs;
-      pr "After unification: " );
+      pr "After unification:\n" );
+    let ut = unify tann cstrs in
+    printtm_ann ut;
     pr "\n\n"
   with Exit _ -> ()
 
