@@ -284,37 +284,39 @@ let init_unification_array () =
   let uarr : unification_array = Array.init !type_counter (fun i -> CtyVar i) in
   uarr
 
-let rec find ctyp uarr =
+let rec find ctyp uarr visited =
   match ctyp with
   | CtyVar i ->
-      let utyp = uarr.(i) in
-      if utyp = ctyp then utyp else find utyp uarr
+      if List.mem i visited then
+        err "Unification failed: infinitely unifiable term"
+      else
+        let utyp = uarr.(i) in
+        if utyp = ctyp then utyp
+        else
+          let utyp1 = find utyp uarr (i :: visited) in
+          uarr.(i) <- utyp1;
+          utyp1
   | CtyUnit -> CtyUnit
   | CtyVoid -> CtyVoid
   | CtyFunc (ctyp1, ctyp2) ->
-      let utyp1 = find ctyp1 uarr in
-      let utyp2 = find ctyp2 uarr in
+      let utyp1 = find ctyp1 uarr visited in
+      let utyp2 = find ctyp2 uarr visited in
       CtyFunc (utyp1, utyp2)
   | CtyProd (ctyp1, ctyp2) ->
-      let utyp1 = find ctyp1 uarr in
-      let utyp2 = find ctyp2 uarr in
+      let utyp1 = find ctyp1 uarr visited in
+      let utyp2 = find ctyp2 uarr visited in
       CtyProd (utyp1, utyp2)
   | CtySum (ctyp1, ctyp2) ->
-      let utyp1 = find ctyp1 uarr in
-      let utyp2 = find ctyp2 uarr in
+      let utyp1 = find ctyp1 uarr visited in
+      let utyp2 = find ctyp2 uarr visited in
       CtySum (utyp1, utyp2)
 
 let rec process_constraints cstrs uarr =
-  (* pr "Unification array:\n";
-     printuarr uarr; *)
   match cstrs with
   | [] -> ()
   | ((ctyp1, ctyp2) as cstr) :: cstrs1 -> (
-      (* pr "Constraint: ";
-         printconstr cstr;
-         pr "\n"; *)
-      let u = find ctyp1 uarr in
-      let v = find ctyp2 uarr in
+      let u = find ctyp1 uarr [] in
+      let v = find ctyp2 uarr [] in
       match (u, v) with
       | CtyFunc (cc11, cc12), CtyFunc (cc21, cc22)
       | CtyProd (cc11, cc12), CtyProd (cc21, cc22)
@@ -329,7 +331,7 @@ let rec process_constraints cstrs uarr =
           process_constraints cstrs1 uarr
       | _ ->
           errf (fun () ->
-              pr "Error: Unification failed at constraint: ";
+              pr "Error: Unification failed: Can't apply constraint: ";
               printconstr cstr) )
 
 let rec ctype_to_type ctyp =
@@ -351,7 +353,7 @@ let rec ctype_to_type ctyp =
 
 let subst_tyann ann uarr =
   match ann with
-  | CType ctyp -> Type (ctype_to_type (find ctyp uarr))
+  | CType ctyp -> Type (ctype_to_type (find ctyp uarr []))
   | _ -> err "Trying to substitute a non-constrained type"
 
 let rec subst_term t uarr =
@@ -401,8 +403,6 @@ let get_type ann =
 let unify t cstrs =
   let uarr = init_unification_array () in
   process_constraints cstrs uarr;
-  (* pr "Unification array:\n";
-     printuarr uarr; *)
   let t1 = subst_term t uarr in
   let typ = get_type (tmTyann t1) in
   (t1, typ)
