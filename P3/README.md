@@ -20,7 +20,7 @@ dune exec -- ./main.exe [-v] <plik>
 
 `<plik>` musi zawierać termy zakończone znakiem średnika.
 
-Jeśli flaga `-v` jest ustawiona, program wypisze na wyjściu dodatkowe informacje o ewaluowanych termach.
+Jeśli flaga `-v` jest ustawiona, program wypisze na wyjściu dodatkowe informacje podczas działania.
 
 W folderze `tests.t` znajdują się przykładowe pliki wejściowe dla programu.
 
