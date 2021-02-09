@@ -41,7 +41,7 @@ val reset_type_counter : unit -> unit
 val fresh_type_variable : unit -> cty
 
 (* The returned term contains type annotations *)
-val infer_type : context -> term -> term * cty * constraints
+val infer_type : context -> term -> term * constraints
 
 val process_constraints : constraints -> unification_array -> unit
 

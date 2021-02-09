@@ -63,7 +63,7 @@ let process_command (TypeOf (_fi, t)) =
       printtm t;
       pr "\n" );
     reset_type_counter ();
-    let tann, _typ, cstrs = infer_type emptycontext t in
+    let tann, cstrs = infer_type emptycontext t in
     if !verbose then (
       pr "Before unification:\n";
       printtm_ann tann;

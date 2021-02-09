@@ -43,13 +43,11 @@ module Error = struct
   let err s =
     errf (fun () ->
         print_string "Error: ";
-        print_string s;
-        print_newline ())
+        print_string s;)
 
   let error fi s =
     errfAt fi (fun () ->
-        print_string s;
-        print_newline ())
+        print_string s;)
 
   let warning s =
     print_string "Warning: ";

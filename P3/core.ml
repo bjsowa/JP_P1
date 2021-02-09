@@ -43,6 +43,16 @@ let tmTyann t =
   | TmIn (_, ann, _, _) -> ann
   | TmCase (_, ann, _, _, _) -> ann
 
+let get_type t =
+  match tmTyann t with
+  | Type typ -> typ
+  | _ -> err "Internal Error: Expected Type annotation"
+
+let get_ctype t =
+  match tmTyann t with
+  | CType ctyp -> ctyp
+  | _ -> err "Internal Error: Expected CType annotation"
+
 (* --------------------------  PRINTING  ------------------------- *)
 
 let rec printty_Type typ =
@@ -224,60 +234,57 @@ let rec infer_type ctx t =
   match t with
   | TmVar (fi, _, x) ->
       let typ = lookup fi ctx x in
-      (TmVar (fi, CType typ, x), typ, [])
+      (TmVar (fi, CType typ, x), [])
   | TmAbs (fi, _, x, t1) ->
       let fresh = fresh_type_variable () in
       let ctx1 = add_binding ctx x fresh in
-      let tann1, typ1, cstrs1 = infer_type ctx1 t1 in
-      let typ = CtyFunc (fresh, typ1) in
-      (TmAbs (fi, CType typ, x, tann1), typ, cstrs1)
+      let tann1, cstrs1 = infer_type ctx1 t1 in
+      let typ = CtyFunc (fresh, get_ctype tann1) in
+      (TmAbs (fi, CType typ, x, tann1), cstrs1)
   | TmApp (fi, _, t1, t2) ->
-      let tann1, typ1, cstrs1 = infer_type ctx t1 in
-      let tann2, typ2, cstrs2 = infer_type ctx t2 in
+      let tann1, cstrs1 = infer_type ctx t1 in
+      let tann2, cstrs2 = infer_type ctx t2 in
       let typ = fresh_type_variable () in
-      let cstr = (CtyFunc (typ2, typ), typ1) in
-      ( TmApp (fi, CType typ, tann1, tann2),
-        typ,
-        cstr :: List.append cstrs1 cstrs2 )
-  | TmUnit (fi, _) -> (TmUnit (fi, CType CtyUnit), CtyUnit, [])
+      let cstr = (CtyFunc (get_ctype tann2, typ), get_ctype tann1) in
+      (TmApp (fi, CType typ, tann1, tann2), cstr :: List.append cstrs1 cstrs2)
+  | TmUnit (fi, _) -> (TmUnit (fi, CType CtyUnit), [])
   | TmProd (fi, _, t1, t2) ->
-      let tann1, typ1, cstrs1 = infer_type ctx t1 in
-      let tann2, typ2, cstrs2 = infer_type ctx t2 in
-      let typ = CtyProd (typ1, typ2) in
-      (TmProd (fi, CType typ, tann1, tann2), typ, List.append cstrs1 cstrs2)
+      let tann1, cstrs1 = infer_type ctx t1 in
+      let tann2, cstrs2 = infer_type ctx t2 in
+      let typ = CtyProd (get_ctype tann1, get_ctype tann2) in
+      (TmProd (fi, CType typ, tann1, tann2), List.append cstrs1 cstrs2)
   | TmProj (fi, _, t1, id) ->
       let fresh1 = fresh_type_variable () in
       let fresh2 = fresh_type_variable () in
-      let tann1, typ1, cstrs1 = infer_type ctx t1 in
+      let tann1, cstrs1 = infer_type ctx t1 in
       let typ = match id with ID_1 -> fresh1 | ID_2 -> fresh2 in
-      let cstr = (typ1, CtyProd (fresh1, fresh2)) in
-      (TmProj (fi, CType typ, tann1, id), typ, cstr :: cstrs1)
+      let cstr = (get_ctype tann1, CtyProd (fresh1, fresh2)) in
+      (TmProj (fi, CType typ, tann1, id), cstr :: cstrs1)
   | TmAbort (fi, _, t1) ->
-      let tann1, typ1, cstrs1 = infer_type ctx t1 in
+      let tann1, cstrs1 = infer_type ctx t1 in
       let typ = fresh_type_variable () in
-      let cstr = (typ1, CtyVoid) in
-      (TmAbort (fi, CType typ, tann1), typ, cstr :: cstrs1)
+      let cstr = (get_ctype tann1, CtyVoid) in
+      (TmAbort (fi, CType typ, tann1), cstr :: cstrs1)
   | TmIn (fi, _, id, t1) ->
-      let tann1, typ1, cstrs1 = infer_type ctx t1 in
+      let tann1, cstrs1 = infer_type ctx t1 in
       let fresh = fresh_type_variable () in
       let typ =
         match id with
-        | ID_1 -> CtySum (typ1, fresh)
-        | ID_2 -> CtySum (fresh, typ1)
+        | ID_1 -> CtySum (get_ctype tann1, fresh)
+        | ID_2 -> CtySum (fresh, get_ctype tann1)
       in
-      (TmIn (fi, CType typ, id, tann1), typ, cstrs1)
+      (TmIn (fi, CType typ, id, tann1), cstrs1)
   | TmCase (fi, _, t1, (x2, t2), (x3, t3)) ->
-      let tann1, typ1, cstrs1 = infer_type ctx t1 in
+      let tann1, cstrs1 = infer_type ctx t1 in
       let fresh1 = fresh_type_variable () in
       let fresh2 = fresh_type_variable () in
       let ctx2 = add_binding ctx x2 fresh1 in
-      let tann2, typ2, cstrs2 = infer_type ctx2 t2 in
+      let tann2, cstrs2 = infer_type ctx2 t2 in
       let ctx3 = add_binding ctx x3 fresh2 in
-      let tann3, typ3, cstrs3 = infer_type ctx3 t3 in
-      let cstr1 = (typ1, CtySum (fresh1, fresh2)) in
-      let cstr2 = (typ2, typ3) in
-      ( TmCase (fi, CType typ2, tann1, (x2, tann2), (x3, tann3)),
-        typ2,
+      let tann3, cstrs3 = infer_type ctx3 t3 in
+      let cstr1 = (get_ctype tann1, CtySum (fresh1, fresh2)) in
+      let cstr2 = (get_ctype tann2, get_ctype tann3) in
+      ( TmCase (fi, CType (get_ctype tann2), tann1, (x2, tann2), (x3, tann3)),
         List.concat [ [ cstr1; cstr2 ]; cstrs1; cstrs2; cstrs3 ] )
 
 let init_unification_array () =
@@ -288,7 +295,7 @@ let rec find ctyp uarr visited =
   match ctyp with
   | CtyVar i ->
       if List.mem i visited then
-        err "Unification failed: infinitely unifiable term"
+        err "Unification failed: Infinitely unifiable term"
       else
         let utyp = uarr.(i) in
         if utyp = ctyp then utyp
@@ -395,14 +402,9 @@ let rec subst_term t uarr =
       TmCase (fi, ann1, st1, (x2, st2), (x3, st3))
   | _ -> t
 
-let get_type ann =
-  match ann with
-  | Type typ -> typ
-  | _ -> err "Internal Error: Expected type annotation"
-
 let unify t cstrs =
   let uarr = init_unification_array () in
   process_constraints cstrs uarr;
   let t1 = subst_term t uarr in
-  let typ = get_type (tmTyann t1) in
+  let typ = get_type t1 in
   (t1, typ)
