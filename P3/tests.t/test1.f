@@ -15,3 +15,4 @@ p1 <lambda x.x,unit>;
 abort x;
 abort unit;
 (lambda x. abort x) (in1 unit);
+lambda x. lambda y. lambda z. (p2 x) (p2 y) (p1 z);

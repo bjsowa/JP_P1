@@ -59,7 +59,7 @@ let parseFile inFile =
 let process_command (TypeOf (_fi, t)) =
   try
     if !verbose then (
-      pr "Type Checking: ";
+      pr "\nType Checking: ";
       printtm t;
       pr "\n" );
     reset_type_counter ();

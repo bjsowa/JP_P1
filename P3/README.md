@@ -36,6 +36,6 @@ Krótkie wyjaśnienie niektórych typów danych zdefiniowanych w `syntax.mli`:
 
 Działanie:
   - `infer_type` - Dostaje kontekst oraz nieotypowany term. Zwraca term ze zmienionymi anotacjami typowymi na typy ze zmiennymi unifikacyjnymi oraz listę wiązań typowych.
-  - `unify` - Dostaje term anotowany typami ze zmiennymi unifikacyjnymi oraz listę wiązań typowych. Wykorzystuje algorytm Huet do rozwiązania problemu unifikacji. Następnie zwraca term, w którym anotacje typowe wskazują już na typy zamknięte oraz typ całego termu. Jeśli jakaś zmienna unifikacyjna nie zunifikowała się z żadnym typem zamkniętym, zostanie ona zunifikowana z typem Unit. 
+  - `unify` - Dostaje term anotowany typami ze zmiennymi unifikacyjnymi oraz listę wiązań typowych. Wykorzystuje algorytm Huet do rozwiązania problemu unifikacji. Następnie zwraca term, w którym anotacje typowe wskazują już na typy zamknięte oraz typ całego termu. Jeśli jakaś zmienna unifikacyjna nie zunifikowała się z żadnym typem zamkniętym, zostanie ona zunifikowana z typem Unit. Dodatkowo, operacja `find` wykrywa cykle, dzięki czemu funkcja nie pętli się na termach, które są `infinitely unifiable`.
 
 [dune]: https://github.com/ocaml/dune

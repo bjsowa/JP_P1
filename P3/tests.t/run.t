@@ -15,8 +15,10 @@
   Error: Variable type lookup failure: Variable x not found in context
   Error: Unification failed: Can't apply constraint: Unit = Void (Unit = Void)
   Error: Unification failed: Can't apply constraint: v0 = Void (Unit + v2 = Void)
+  (Unit x (Unit -> Unit -> Unit)) -> (Unit x Unit) -> (Unit x Unit) -> Unit
 
   $ ../main.exe -v test1.f
+  
   Type Checking: lambda x.<lambda x.x,unit>
   Before unification:
   x : CType v1
@@ -32,6 +34,7 @@
   <lambda x.x,unit> : Type (Unit -> Unit) x Unit
   lambda x.<lambda x.x,unit> : Type Unit -> (Unit -> Unit) x Unit
   Unit -> (Unit -> Unit) x Unit
+  
   Type Checking: case unit of in1 x => unit | in2 x => unit
   Before unification:
   unit : CType Unit
@@ -43,6 +46,7 @@
   Unit = Unit
   After unification:
   Error: Unification failed: Can't apply constraint: Unit = v0 + v1 (Unit = v0 + v1)
+  
   Type Checking: (lambda x.case x of in1 y => p1 y | in2 y => p2 y) in1 <unit,unit>
   Before unification:
   x : CType v0
@@ -77,6 +81,7 @@
   in1 <unit,unit> : Type (Unit x Unit) + (Unit x Unit)
   (lambda x.case x of in1 y => p1 y | in2 y => p2 y) in1 <unit,unit> : Type Unit
   Unit
+  
   Type Checking: (lambda x.x) unit
   Before unification:
   x : CType v0
@@ -91,6 +96,7 @@
   unit : CType Unit
   (lambda x.x) unit : Type Unit
   Unit
+  
   Type Checking: lambda f.(lambda x.f (x x)) (lambda x.f (x x))
   Before unification:
   f : CType v0
@@ -115,6 +121,7 @@
   v4 -> v5 = v4
   After unification:
   Error: Unification failed: Infinitely unifiable term
+  
   Type Checking: (lambda f.lambda a.lambda b.<f a,f b>) (lambda x.x) unit <unit,unit>
   Before unification:
   f : CType v0
@@ -144,6 +151,7 @@
   v2 -> v4 = v0
   After unification:
   Error: Unification failed: Can't apply constraint: Unit x Unit = Unit (Unit x Unit = Unit)
+  
   Type Checking: lambda y.abort ((lambda x.y) unit)
   Before unification:
   y : CType v0
@@ -163,6 +171,7 @@
   abort ((lambda x.y) unit) : Type Unit
   lambda y.abort ((lambda x.y) unit) : Type Void -> Unit
   Void -> Unit
+  
   Type Checking: lambda x.abort x
   Before unification:
   x : CType v0
@@ -175,6 +184,7 @@
   abort x : Type Unit
   lambda x.abort x : Type Void -> Unit
   Void -> Unit
+  
   Type Checking: (lambda x.case x of in1 y => p1 y | in2 y => p2 y) in1 <unit,lambda x.unit>
   Before unification:
   x : CType v0
@@ -211,6 +221,7 @@
   in1 <unit,lambda x.unit> : Type (Unit x (Unit -> Unit)) + (Unit x Unit)
   (lambda x.case x of in1 y => p1 y | in2 y => p2 y) in1 <unit,lambda x.unit> : Type Unit
   Unit
+  
   Type Checking: (lambda x.case x of in1 y => p1 y | in2 y => p2 y) in2 <unit,lambda x.unit>
   Before unification:
   x : CType v0
@@ -247,6 +258,7 @@
   in2 <unit,lambda x.unit> : Type ((Unit -> Unit) x Unit) + (Unit x (Unit -> Unit))
   (lambda x.case x of in1 y => p1 y | in2 y => p2 y) in2 <unit,lambda x.unit> : Type Unit -> Unit
   Unit -> Unit
+  
   Type Checking: p1 <lambda x.x,unit>
   Before unification:
   x : CType v2
@@ -263,6 +275,7 @@
   <lambda x.x,unit> : Type (Unit -> Unit) x Unit
   p1 <lambda x.x,unit> : Type Unit -> Unit
   Unit -> Unit
+  
   Type Checking: (lambda z.(lambda x.case x of in1 y => p1 y | in2 y => p2 y) in1 z) <unit,lambda x.unit>
   Before unification:
   x : CType v1
@@ -306,9 +319,11 @@
   <unit,lambda x.unit> : Type Unit x (Unit -> Unit)
   (lambda z.(lambda x.case x of in1 y => p1 y | in2 y => p2 y) in1 z) <unit,lambda x.unit> : Type Unit
   Unit
+  
   Type Checking: abort x
   $TESTCASE_ROOT/test1.f:15.7:
   Error: Variable type lookup failure: Variable x not found in context
+  
   Type Checking: abort unit
   Before unification:
   unit : CType Unit
@@ -317,6 +332,7 @@
   Unit = Void
   After unification:
   Error: Unification failed: Can't apply constraint: Unit = Void (Unit = Void)
+  
   Type Checking: (lambda x.abort x) in1 unit
   Before unification:
   x : CType v0
@@ -330,3 +346,36 @@
   v0 = Void
   After unification:
   Error: Unification failed: Can't apply constraint: v0 = Void (Unit + v2 = Void)
+  
+  Type Checking: lambda x.lambda y.lambda z.p2 x p2 y p1 z
+  Before unification:
+  x : CType v0
+  p2 x : CType v4
+  y : CType v1
+  p2 y : CType v6
+  p2 x p2 y : CType v7
+  z : CType v2
+  p1 z : CType v8
+  p2 x p2 y p1 z : CType v10
+  lambda z.p2 x p2 y p1 z : CType v2 -> v10
+  lambda y.lambda z.p2 x p2 y p1 z : CType v1 -> v2 -> v10
+  lambda x.lambda y.lambda z.p2 x p2 y p1 z : CType v0 -> v1 -> v2 -> v10
+  Constraints:
+  v8 -> v10 = v7
+  v6 -> v7 = v4
+  v0 = v3 x v4
+  v1 = v5 x v6
+  v2 = v8 x v9
+  After unification:
+  x : Type Unit x (Unit -> Unit -> Unit)
+  p2 x : Type Unit -> Unit -> Unit
+  y : Type Unit x Unit
+  p2 y : Type Unit
+  p2 x p2 y : Type Unit -> Unit
+  z : Type Unit x Unit
+  p1 z : Type Unit
+  p2 x p2 y p1 z : Type Unit
+  lambda z.p2 x p2 y p1 z : Type (Unit x Unit) -> Unit
+  lambda y.lambda z.p2 x p2 y p1 z : Type (Unit x Unit) -> (Unit x Unit) -> Unit
+  lambda x.lambda y.lambda z.p2 x p2 y p1 z : Type (Unit x (Unit -> Unit -> Unit)) -> (Unit x Unit) -> (Unit x Unit) -> Unit
+  (Unit x (Unit -> Unit -> Unit)) -> (Unit x Unit) -> (Unit x Unit) -> Unit
