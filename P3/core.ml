@@ -13,7 +13,7 @@ let lookup fi ctx x =
   with Not_found ->
     let msg =
       Printf.sprintf
-        "Variable type lookup failure: Variable %s not found in context"
+        "Error: Variable type lookup failure: Variable %s not found in context"
     in
     error fi (msg x)
 
@@ -339,7 +339,10 @@ let rec process_constraints cstrs uarr =
       | _ ->
           errf (fun () ->
               pr "Error: Unification failed: Can't apply constraint: ";
-              printconstr cstr) )
+              printconstr cstr;
+              pr " (";
+              printconstr (u, v);
+              pr ")") )
 
 let rec ctype_to_type ctyp =
   match ctyp with
